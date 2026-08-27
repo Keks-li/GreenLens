@@ -4,13 +4,16 @@ import { fetchOpenMeteoForecast, calculateCompoundFloodPredictions } from '../..
 
 export default function FloodRiskView({
   drainageSegments = [],
+  incidents = [],
   onInspectInfrastructure,
-  onOpenDispatch
+  onOpenDispatch,
+  onSelectSegment
 }) {
   const [meteoData, setMeteoData] = useState(null);
   const [activeChartOverlay, setActiveChartOverlay] = useState('rainfall'); // 'risk' or 'rainfall'
   const [forecastHorizon, setForecastHorizon] = useState('24H'); // '6H', '12H', '24H', '48H'
   const [selectedDrainId, setSelectedDrainId] = useState(null);
+  const [selectedLocationInfo, setSelectedLocationInfo] = useState(null);
   const [isLoadingMeteo, setIsLoadingMeteo] = useState(true);
 
   // Fetch live Open-Meteo data on mount
@@ -189,17 +192,139 @@ export default function FloodRiskView({
               <span className="text-[11px] font-data-mono text-primary font-bold">5.34352, -0.62566</span>
             </div>
 
-            <div className="h-96 w-full rounded-xl overflow-hidden border border-outline-variant/60">
+            <div className="h-[430px] w-full rounded-xl overflow-hidden border border-outline-variant/60 relative">
               <OpenStreetMapViewer
                 drainageSegments={drainageSegments}
-                selectedDrainId={selectedDrainId}
-                onSelectDrain={(drain) => {
-                  setSelectedDrainId(drain.id);
-                  if (onInspectInfrastructure) onInspectInfrastructure(drain.name);
+                incidents={incidents}
+                selectedSegmentId={selectedDrainId}
+                onSelectSegment={(seg) => {
+                  setSelectedDrainId(seg.id);
+                  setSelectedLocationInfo({
+                    lat: seg.coordinates?.lat || 5.3556,
+                    lng: seg.coordinates?.lng || -0.6247,
+                    sector: seg.sector,
+                    riskLevel: seg.riskLevel === 'critical' ? 'Critical' : seg.riskLevel === 'high' ? 'High' : 'Moderate',
+                    nearestDrain: seg,
+                    distanceToNearestDrain: 0,
+                    estWaterDepth: seg.riskLevel === 'critical' ? '0.45m - 0.75m' : '0.15m',
+                    soilSat: '88% Saturated'
+                  });
                 }}
+                onSelectLocation={(locData) => {
+                  setSelectedLocationInfo(locData);
+                  if (locData.nearestDrain) {
+                    setSelectedDrainId(locData.nearestDrain.id);
+                  }
+                }}
+                onOpenDispatch={onOpenDispatch}
+                showHeatmap={true}
+                forecastHorizon={forecastHorizon}
                 viewMode="flood-risk"
               />
             </div>
+
+            {/* Selected Location Flood Assessment Info Drawer / Card */}
+            {selectedLocationInfo && (
+              <div className="mt-4 p-4 rounded-xl bg-surface-container-low border border-primary/30 shadow-xs animate-in fade-in slide-in-from-top-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-outline-variant/50">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`p-2 rounded-lg text-white ${
+                      selectedLocationInfo.riskLevel === 'Critical' ? 'bg-risk-critical' : selectedLocationInfo.riskLevel === 'High' ? 'bg-risk-high' : 'bg-primary'
+                    }`}>
+                      <span className="material-symbols-outlined text-[20px]">
+                        {selectedLocationInfo.riskLevel === 'Critical' ? 'warning' : 'travel_explore'}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-[14px] text-on-surface">
+                          {selectedLocationInfo.nearestDrain?.name ? `${selectedLocationInfo.nearestDrain.name} (${selectedLocationInfo.nearestDrain.id})` : selectedLocationInfo.sector || 'Winneba Catchment Point'}
+                        </h4>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-data-mono text-white ${
+                          selectedLocationInfo.riskLevel === 'Critical' ? 'bg-risk-critical' : selectedLocationInfo.riskLevel === 'High' ? 'bg-risk-high' : 'bg-primary'
+                        }`}>
+                          {selectedLocationInfo.riskLevel} Risk
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-on-surface-variant font-data-mono">
+                        GIS: {selectedLocationInfo.lat}° N, {Math.abs(selectedLocationInfo.lng)}° W • {selectedLocationInfo.sector}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    {selectedLocationInfo.nearestDrain && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onInspectInfrastructure) {
+                            onInspectInfrastructure(selectedLocationInfo.nearestDrain);
+                          } else if (onSelectSegment) {
+                            onSelectSegment(selectedLocationInfo.nearestDrain);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors border border-outline-variant"
+                      >
+                        <span className="material-symbols-outlined text-[16px] text-primary">hub</span>
+                        Digital Twin
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onOpenDispatch) {
+                          onOpenDispatch({
+                            drainId: selectedLocationInfo.nearestDrain?.id,
+                            drainName: selectedLocationInfo.nearestDrain?.name || selectedLocationInfo.sector,
+                            location: `GIS: ${selectedLocationInfo.lat}, ${selectedLocationInfo.lng}`,
+                            riskScore: selectedLocationInfo.nearestDrain?.riskScore || 85
+                          });
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-surface-tint text-on-primary text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">send</span>
+                      Dispatch Crew
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLocationInfo(null)}
+                      className="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container cursor-pointer"
+                      title="Close Assessment"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                  <div className="p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/40">
+                    <span className="text-[10px] uppercase font-bold text-outline block">Est. Inundation Depth</span>
+                    <span className="font-bold text-[13px] font-data-mono text-risk-critical">
+                      {selectedLocationInfo.estWaterDepth || '0.35m - 0.65m'}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/40">
+                    <span className="text-[10px] uppercase font-bold text-outline block">Soil Saturation</span>
+                    <span className="font-bold text-[13px] font-data-mono text-on-surface">
+                      {selectedLocationInfo.soilSat || '88% Saturated'}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/40">
+                    <span className="text-[10px] uppercase font-bold text-outline block">Nearest Culvert</span>
+                    <span className="font-bold text-[13px] font-data-mono text-primary truncate block">
+                      {selectedLocationInfo.nearestDrain ? `${selectedLocationInfo.nearestDrain.id} (${selectedLocationInfo.distanceToNearestDrain}m)` : 'None in 500m'}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/40">
+                    <span className="text-[10px] uppercase font-bold text-outline block">Open-Meteo Inflow</span>
+                    <span className="font-bold text-[13px] font-data-mono text-risk-high">
+                      {rain24h}mm (Peak 7.8mm/h)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

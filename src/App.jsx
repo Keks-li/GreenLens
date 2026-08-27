@@ -312,10 +312,12 @@ export default function App() {
           {currentView === 'flood-risk' && (
             <FloodRiskView
               drainageSegments={drainageSegments}
-              onInspectInfrastructure={(name) => {
-                const targetDrain = drainageSegments[0];
-                setSelectedSegment(targetDrain);
+              incidents={incidents}
+              onInspectInfrastructure={(segment) => {
+                const target = typeof segment === 'object' ? segment : drainageSegments.find((d) => d.id === segment || d.name === segment) || drainageSegments[0];
+                setSelectedSegment(target);
               }}
+              onSelectSegment={handleSelectSegment}
               onOpenDispatch={handleOpenDispatch}
             />
           )}
