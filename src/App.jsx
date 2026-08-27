@@ -21,6 +21,7 @@ import DispatchModal from './components/modals/DispatchModal';
 import SegmentDetailsModal from './components/modals/SegmentDetailsModal';
 import IncidentDetailModal from './components/modals/IncidentDetailModal';
 import HelpModal from './components/modals/HelpModal';
+import ImageAnalysisModal from './components/modals/ImageAnalysisModal';
 
 import { dataService, isSupabaseConfigured } from './lib/supabase';
 import { isViewAllowed, getPermissionsForRole } from './lib/rbac';
@@ -57,6 +58,7 @@ export default function App() {
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [dispatchItem, setDispatchItem] = useState(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isImageAnalysisOpen, setIsImageAnalysisOpen] = useState(false);
 
   // Toast Notification State
   const [toastMessage, setToastMessage] = useState(null);
@@ -226,6 +228,7 @@ export default function App() {
           setSearchQuery={setSearchQuery}
           weatherData={weather}
           onOpenHelp={() => setIsHelpOpen(true)}
+          onOpenImageAnalysis={() => setIsImageAnalysisOpen(true)}
         />
 
         {/* Main Routed Views */}
@@ -256,6 +259,7 @@ export default function App() {
               onSelectIncident={handleSelectIncident}
               onOpenDispatch={handleOpenDispatch}
               onUpdateStatus={handleUpdateIncidentStatus}
+              onOpenImageAnalysis={() => setIsImageAnalysisOpen(true)}
             />
           )}
 
@@ -386,6 +390,16 @@ export default function App() {
       />
 
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+
+      <ImageAnalysisModal
+        isOpen={isImageAnalysisOpen}
+        onClose={() => setIsImageAnalysisOpen(false)}
+        currentUser={currentUser}
+        onAnalysisComplete={(created) => {
+          loadData(selectedMunicipalityId);
+          showToast(`✓ AI Vision Scan complete: ${created.id} analyzed and recorded!`);
+        }}
+      />
     </div>
   );
 }

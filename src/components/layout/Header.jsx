@@ -9,7 +9,8 @@ export default function Header({
   setSearchQuery,
   weatherData,
   onOpenNotifications,
-  onOpenHelp
+  onOpenHelp,
+  onOpenImageAnalysis
 }) {
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
 
@@ -101,6 +102,17 @@ export default function Header({
           </span>
           <span className="text-[10px] font-bold text-primary uppercase tracking-wider">AI Core Active</span>
         </div>
+
+        {/* AI Photo Scanner Upload Action */}
+        <button
+          type="button"
+          onClick={onOpenImageAnalysis}
+          className="bg-primary hover:bg-surface-tint text-on-primary px-3.5 py-1.5 rounded-full font-label-caps text-[11px] font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer hover:shadow-sm active:scale-95"
+          title="Upload Photo for AI Vision Analysis"
+        >
+          <span className="material-symbols-outlined text-[16px]">add_a_photo</span>
+          <span>Upload &amp; Scan</span>
+        </button>
 
         {/* Notifications & Help */}
         <div className="flex items-center gap-3 relative">
