@@ -251,14 +251,22 @@ export default function IncidentsView({
                 )}
 
                 <button
+                  type="button"
+                  disabled={inc.status === 'resolved'}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onOpenDispatch && onOpenDispatch(inc);
+                    if (inc.status !== 'resolved' && onOpenDispatch) onOpenDispatch(inc);
                   }}
-                  className="bg-primary text-on-primary px-3 py-1 rounded-lg text-[11px] font-label-caps hover:bg-surface-tint shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                  className={`px-3 py-1 rounded-lg text-[11px] font-label-caps transition-all flex items-center gap-1 ${
+                    inc.status === 'resolved'
+                      ? 'bg-surface-container-high text-outline cursor-not-allowed opacity-60'
+                      : 'bg-primary text-on-primary hover:bg-surface-tint shadow-xs cursor-pointer'
+                  }`}
                 >
-                  <span className="material-symbols-outlined text-[14px]">send</span>
-                  Dispatch
+                  <span className="material-symbols-outlined text-[14px]">
+                    {inc.status === 'resolved' ? 'check_circle' : 'send'}
+                  </span>
+                  {inc.status === 'resolved' ? 'Resolved' : 'Dispatch'}
                 </button>
               </div>
             </div>

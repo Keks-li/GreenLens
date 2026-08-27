@@ -71,14 +71,22 @@ export default function AIPriorityList({
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  disabled={action.status === 'resolved'}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDispatch && onDispatch(action);
+                    if (action.status !== 'resolved' && onDispatch) onDispatch(action);
                   }}
-                  className="bg-primary text-on-primary px-3.5 py-1.5 rounded-lg font-label-caps text-[11px] hover:bg-surface-tint transition-all shadow-2xs hover:shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                  className={`px-3.5 py-1.5 rounded-lg font-label-caps text-[11px] transition-all flex items-center gap-1.5 ${
+                    action.status === 'resolved'
+                      ? 'bg-surface-container-high text-outline cursor-not-allowed opacity-60'
+                      : 'bg-primary text-on-primary hover:bg-surface-tint shadow-2xs hover:shadow-sm active:scale-95 cursor-pointer'
+                  }`}
                 >
-                  <span className="material-symbols-outlined text-[15px]">send</span>
-                  Dispatch Team
+                  <span className="material-symbols-outlined text-[15px]">
+                    {action.status === 'resolved' ? 'check_circle' : 'send'}
+                  </span>
+                  {action.status === 'resolved' ? 'Resolved' : 'Dispatch Team'}
                 </button>
 
                 <button

@@ -247,11 +247,23 @@ export default function DrainageNetworkView({
                         <span className="material-symbols-outlined text-[18px]">hub</span>
                       </button>
                       <button
-                        onClick={() => onOpenDispatch && onOpenDispatch(seg)}
-                        className="p-1.5 rounded-lg text-primary hover:bg-primary/10"
-                        title="Dispatch Crew"
+                        type="button"
+                        disabled={seg.status === 'resolved' || seg.blockagePercentage === 0}
+                        onClick={() => {
+                          if (seg.status !== 'resolved' && seg.blockagePercentage !== 0) {
+                            onOpenDispatch && onOpenDispatch(seg);
+                          }
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          seg.status === 'resolved' || seg.blockagePercentage === 0
+                            ? 'text-outline cursor-not-allowed opacity-40'
+                            : 'text-primary hover:bg-primary/10 cursor-pointer'
+                        }`}
+                        title={seg.status === 'resolved' || seg.blockagePercentage === 0 ? 'Segment Cleared' : 'Dispatch Crew'}
                       >
-                        <span className="material-symbols-outlined text-[18px]">send</span>
+                        <span className="material-symbols-outlined text-[18px]">
+                          {seg.status === 'resolved' || seg.blockagePercentage === 0 ? 'check_circle' : 'send'}
+                        </span>
                       </button>
                     </div>
                   </td>

@@ -35,6 +35,8 @@ export default function Header({
     }
   };
 
+  const [showWeatherPopover, setShowWeatherPopover] = useState(false);
+
   return (
     <header className="fixed top-0 left-72 right-0 h-16 bg-surface/85 backdrop-blur-md border-b border-outline-variant z-40 flex items-center justify-between px-8 select-none">
       {/* Left side: Municipality selector & Breadcrumbs */}
@@ -66,7 +68,7 @@ export default function Header({
       </div>
 
       {/* Right side: Search, Telemetry Weather, AI status, Actions */}
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-4">
         {/* Search */}
         <div className="relative flex items-center">
           <span className="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span>
@@ -75,7 +77,7 @@ export default function Header({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search city data, drains, incidents..."
-            className="bg-surface-container-low border border-outline-variant rounded-full pl-9 pr-4 py-1.5 text-body-sm w-64 focus:w-72 transition-all focus:ring-1 focus:ring-primary focus:outline-none placeholder:text-outline"
+            className="bg-surface-container-low border border-outline-variant rounded-full pl-9 pr-4 py-1.5 text-body-sm w-56 focus:w-64 transition-all focus:ring-1 focus:ring-primary focus:outline-none placeholder:text-outline"
           />
           {searchQuery && (
             <button
@@ -87,19 +89,65 @@ export default function Header({
           )}
         </div>
 
-        {/* Live Weather Telemetry */}
-        <div className="flex items-center gap-2.5 bg-secondary-container/30 border border-secondary/20 px-3 py-1.5 rounded-full shadow-2xs">
-          <span className="material-symbols-outlined text-secondary text-[18px] animate-pulse">cloud</span>
-          <span className="text-body-sm font-bold text-on-secondary-container">{weather?.temp || '29°C'}</span>
-          <span className="text-[11px] text-secondary font-medium hidden sm:inline">{weather?.condition || 'Scattered Clouds'}</span>
+        {/* Live Weather & Rainfall Prediction Telemetry */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowWeatherPopover(!showWeatherPopover)}
+            className="flex items-center gap-2 bg-secondary-container/30 border border-secondary/20 px-3 py-1.5 rounded-full shadow-2xs hover:bg-secondary-container/50 transition-all cursor-pointer"
+            title="Open-Meteo Rainfall & Hydrology Forecast"
+          >
+            <span className="material-symbols-outlined text-secondary text-[17px] animate-pulse">cloud</span>
+            <span className="text-body-sm font-bold text-on-secondary-container">{weather?.temp || '28°C'}</span>
+            <span className="text-[11px] text-secondary font-semibold hidden sm:inline flex items-center gap-1">
+              <span>🌧️ {weather?.rain24hMm || '28.5'}mm (24h)</span>
+            </span>
+          </button>
+
+          {/* Rainfall Prediction Popover */}
+          {showWeatherPopover && (
+            <div className="absolute right-0 top-11 w-80 bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant p-4 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center justify-between pb-2 border-b border-outline-variant mb-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-primary text-[18px]">rainy</span>
+                  <span className="font-title-md text-[13px] text-on-surface font-bold">Open-Meteo Rainfall Prediction</span>
+                </div>
+                <span className="text-[10px] text-primary font-bold uppercase font-data-mono">Live API</span>
+              </div>
+
+              <div className="space-y-2.5 text-[12px]">
+                <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/20 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-outline">Projected 24h Rainfall:</span>
+                    <span className="font-bold text-risk-critical font-data-mono">{weather?.rain24hMm || '28.5'} mm</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-outline">Precipitation Probability:</span>
+                    <span className="font-bold text-primary font-data-mono">{weather?.rainProbability || '85%'}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-outline">Current Wind &amp; Humidity:</span>
+                    <span className="font-semibold text-on-surface">{weather?.wind || '18 km/h'} • {weather?.humidity || '76%'}</span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/40">
+                  <span className="text-[10px] uppercase font-bold text-outline block mb-1">Hydrological Impact Advisory:</span>
+                  <p className="text-[11px] text-on-surface-variant leading-relaxed">
+                    {weather?.warning || 'Convective storm front detected. High surcharge risk on partially silted culverts.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* AI Core Status */}
         <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-container/20 rounded-full border border-primary/30 shadow-2xs">
-          <span className="material-symbols-outlined text-primary text-[18px] animate-spin" style={{ animationDuration: '6s' }}>
+          <span className="material-symbols-outlined text-primary text-[17px] animate-spin" style={{ animationDuration: '6s' }}>
             temp_preferences_custom
           </span>
-          <span className="text-[10px] font-bold text-primary uppercase tracking-wider">AI Core Active</span>
+          <span className="text-[10px] font-bold text-primary uppercase tracking-wider hidden sm:inline">AI Active</span>
         </div>
 
         {/* Notifications & Help */}

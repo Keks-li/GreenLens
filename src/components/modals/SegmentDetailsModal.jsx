@@ -219,14 +219,24 @@ export default function SegmentDetailsModal({
             Close
           </button>
           <button
+            type="button"
+            disabled={segment.status === 'resolved' || segment.blockagePercentage === 0}
             onClick={() => {
-              onClose();
-              onOpenDispatch && onOpenDispatch(segment);
+              if (segment.status !== 'resolved' && segment.blockagePercentage !== 0) {
+                onClose();
+                onOpenDispatch && onOpenDispatch(segment);
+              }
             }}
-            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+            className={`px-5 py-2.5 rounded-xl font-label-caps text-[12px] transition-all flex items-center gap-2 ${
+              segment.status === 'resolved' || segment.blockagePercentage === 0
+                ? 'bg-surface-container-high text-outline cursor-not-allowed opacity-60'
+                : 'bg-primary text-on-primary hover:bg-surface-tint shadow-xs cursor-pointer'
+            }`}
           >
-            <span className="material-symbols-outlined text-[18px]">local_shipping</span>
-            Dispatch Cleanup Team
+            <span className="material-symbols-outlined text-[18px]">
+              {segment.status === 'resolved' || segment.blockagePercentage === 0 ? 'check_circle' : 'local_shipping'}
+            </span>
+            {segment.status === 'resolved' || segment.blockagePercentage === 0 ? 'Segment Cleared' : 'Dispatch Cleanup Team'}
           </button>
         </div>
       </div>

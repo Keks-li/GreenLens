@@ -61,11 +61,21 @@ export default function AIPriorityView({
 
             <div className="flex flex-row lg:flex-col gap-2 min-w-[160px]">
               <button
-                onClick={() => onDispatch(action)}
-                className="flex-1 bg-primary text-on-primary px-4 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center justify-center gap-2"
+                type="button"
+                disabled={action.status === 'resolved'}
+                onClick={() => {
+                  if (action.status !== 'resolved') onDispatch(action);
+                }}
+                className={`flex-1 px-4 py-2.5 rounded-xl font-label-caps text-[12px] transition-all flex items-center justify-center gap-2 ${
+                  action.status === 'resolved'
+                    ? 'bg-surface-container-high text-outline cursor-not-allowed opacity-60'
+                    : 'bg-primary text-on-primary hover:bg-surface-tint shadow-xs cursor-pointer'
+                }`}
               >
-                <span className="material-symbols-outlined text-[18px]">send</span>
-                Dispatch Now
+                <span className="material-symbols-outlined text-[18px]">
+                  {action.status === 'resolved' ? 'check_circle' : 'send'}
+                </span>
+                {action.status === 'resolved' ? 'Resolved' : 'Dispatch Now'}
               </button>
               <button
                 onClick={() => onViewDetails(action)}

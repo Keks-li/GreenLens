@@ -132,14 +132,24 @@ export default function IncidentDetailModal({
             )}
 
             <button
+              type="button"
+              disabled={incident.status === 'resolved'}
               onClick={() => {
-                onClose();
-                onOpenDispatch && onOpenDispatch(incident);
+                if (incident.status !== 'resolved') {
+                  onClose();
+                  onOpenDispatch && onOpenDispatch(incident);
+                }
               }}
-              className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+              className={`px-5 py-2.5 rounded-xl font-label-caps text-[12px] transition-all flex items-center gap-2 ${
+                incident.status === 'resolved'
+                  ? 'bg-surface-container-high text-outline cursor-not-allowed opacity-60'
+                  : 'bg-primary text-on-primary hover:bg-surface-tint shadow-xs cursor-pointer'
+              }`}
             >
-              <span className="material-symbols-outlined text-[18px]">send</span>
-              Dispatch Resolution Team
+              <span className="material-symbols-outlined text-[18px]">
+                {incident.status === 'resolved' ? 'check_circle' : 'send'}
+              </span>
+              {incident.status === 'resolved' ? 'Incident Resolved' : 'Dispatch Resolution Team'}
             </button>
           </div>
         </div>
