@@ -5,6 +5,7 @@ import { dataService } from '../../lib/supabase';
 export default function AdministrationView({
   auditLogsList = [],
   usersList: propUsersList,
+  incidentsList = [],
   currentUser,
   onRefreshData,
   onOpenDispatch
@@ -13,11 +14,11 @@ export default function AdministrationView({
   const permissions = getPermissionsForRole(userRole);
   const isAdmin = permissions.canManageUsers || userRole.toLowerCase().includes('admin');
 
-  const [activeTab, setActiveTab] = useState('activity'); // 'activity', 'users', 'config'
+  const [activeTab, setActiveTab] = useState('activity'); // 'activity', 'uploads', 'users', 'config'
   const [criticalThreshold, setCriticalThreshold] = useState(80);
   const [highThreshold, setHighThreshold] = useState(65);
   const [weatherApiInterval, setWeatherApiInterval] = useState(15);
-  const [activityFilter, setActivityFilter] = useState('all'); // 'all', 'USER_IMAGE_ANALYZED', 'TEAM_DISPATCHED', 'CONFIG_UPDATED'
+  const [activityFilter, setActivityFilter] = useState('all'); // 'all', 'IMAGE', 'DISPATCH', 'CONFIG'
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Municipal Officer', department: 'Environmental Health' });
   const [toastMessage, setToastMessage] = useState(null);
@@ -77,9 +78,9 @@ export default function AdministrationView({
 
   const filteredLogs = auditLogsList.filter((log) => {
     if (activityFilter === 'all') return true;
-    if (activityFilter === 'USER_IMAGE_ANALYZED') return log.action.includes('IMAGE') || log.action.includes('UPLOAD');
-    if (activityFilter === 'TEAM_DISPATCHED') return log.action.includes('DISPATCH');
-    if (activityFilter === 'CONFIG_UPDATED') return log.action.includes('CONFIG') || log.action.includes('THRESHOLD');
+    if (activityFilter === 'IMAGE') return log.action?.includes('IMAGE') || log.action?.includes('UPLOAD');
+    if (activityFilter === 'DISPATCH') return log.action?.includes('DISPATCH');
+    if (activityFilter === 'CONFIG') return log.action?.includes('CONFIG') || log.action?.includes('THRESHOLD');
     return log.action === activityFilter;
   });
 
@@ -98,10 +99,10 @@ export default function AdministrationView({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="material-symbols-outlined text-primary text-[24px]">admin_panel_settings</span>
-            <h1 className="font-headline-lg text-on-surface">Administration &amp; User Activity Hub</h1>
+            <h1 className="font-headline-lg text-on-surface">Admin Command &amp; User Activity Hub</h1>
           </div>
           <p className="font-body-md text-on-surface-variant">
-            Live oversight of citizen image uploads, AI analysis events, officer dispatches, and RBAC governance.
+            Live database oversight of user image analyses, citizen reports, officer dispatches, and governance audit trail.
           </p>
         </div>
 
@@ -120,7 +121,8 @@ export default function AdministrationView({
       {/* Tabs Bar */}
       <div className="flex border-b border-outline-variant/60 gap-8">
         {[
-          { id: 'activity', label: 'User Activities & AI Scans', icon: 'browse_activity', badge: auditLogsList.length },
+          { id: 'activity', label: 'User Activities & Audit Logs', icon: 'browse_activity', badge: auditLogsList.length },
+          { id: 'uploads', label: 'User Uploaded Scans (Database)', icon: 'perm_media', badge: incidentsList.length },
           { id: 'users', label: 'Personnel & Access Control', icon: 'group', badge: users.length },
           { id: 'config', label: 'AI Thresholds & System Config', icon: 'tune' }
         ].map((tab) => (
@@ -146,21 +148,21 @@ export default function AdministrationView({
         ))}
       </div>
 
-      {/* Tab 1: User Activities & AI Uploads Stream */}
+      {/* Tab 1: Live User Activities Stream (from Supabase audit_logs) */}
       {activeTab === 'activity' && (
         <div className="space-y-5">
           {/* Top Activity KPI summary */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                <span className="material-symbols-outlined text-[26px]">document_scanner</span>
+                <span className="material-symbols-outlined text-[26px]">database</span>
               </div>
               <div>
-                <span className="text-[11px] font-label-caps text-outline uppercase font-bold block">AI Image Scans</span>
+                <span className="text-[11px] font-label-caps text-outline uppercase font-bold block">Logged Events</span>
                 <div className="font-display-lg text-[22px] font-bold text-on-surface mt-0.5">
-                  {auditLogsList.filter(l => l.action?.includes('IMAGE') || l.action?.includes('UPLOAD')).length || 4}
+                  {auditLogsList.length}
                 </div>
-                <span className="text-[11px] text-primary font-semibold">Live Computer Vision</span>
+                <span className="text-[11px] text-primary font-semibold">Live Database Stream</span>
               </div>
             </div>
 
@@ -169,11 +171,11 @@ export default function AdministrationView({
                 <span className="material-symbols-outlined text-[26px]">person_pin</span>
               </div>
               <div>
-                <span className="text-[11px] font-label-caps text-outline uppercase font-bold block">Active Contributors</span>
+                <span className="text-[11px] font-label-caps text-outline uppercase font-bold block">Active Users</span>
                 <div className="font-display-lg text-[22px] font-bold text-on-surface mt-0.5">
-                  {users.length + 8} Users
+                  {users.length} Registered
                 </div>
-                <span className="text-[11px] text-on-surface-variant font-medium">Officers &amp; Citizens</span>
+                <span className="text-[11px] text-on-surface-variant font-medium">Officers &amp; Supervisors</span>
               </div>
             </div>
 
@@ -182,9 +184,9 @@ export default function AdministrationView({
                 <span className="material-symbols-outlined text-[26px]">verified_user</span>
               </div>
               <div>
-                <span className="text-[11px] font-label-caps text-outline uppercase font-bold block">Security Protocol</span>
+                <span className="text-[11px] font-label-caps text-outline uppercase font-bold block">Audit Integrity</span>
                 <div className="font-display-lg text-[18px] font-bold text-on-surface mt-0.5">
-                  Immutable Audit Log
+                  Immutable Ledger
                 </div>
                 <span className="text-[11px] text-primary font-semibold">Supabase RLS Synced</span>
               </div>
@@ -198,9 +200,9 @@ export default function AdministrationView({
               <div className="flex flex-wrap gap-1.5">
                 {[
                   { id: 'all', label: 'All Activities' },
-                  { id: 'USER_IMAGE_ANALYZED', label: '📸 AI Photo Uploads' },
-                  { id: 'TEAM_DISPATCHED', label: '🚒 Field Dispatches' },
-                  { id: 'CONFIG_UPDATED', label: '⚙️ System Changes' }
+                  { id: 'IMAGE', label: '📸 User Scans & Uploads' },
+                  { id: 'DISPATCH', label: '🚒 Field Dispatches' },
+                  { id: 'CONFIG', label: '⚙️ Threshold Updates' }
                 ].map((f) => (
                   <button
                     key={f.id}
@@ -229,16 +231,16 @@ export default function AdministrationView({
                 <thead>
                   <tr className="bg-surface-container-low border-b border-outline-variant text-[11px] uppercase font-label-caps text-outline">
                     <th className="py-3.5 px-4">Timestamp</th>
-                    <th className="py-3.5 px-4">User / Citizen</th>
-                    <th className="py-3.5 px-4">Action Type</th>
+                    <th className="py-3.5 px-4">User / Contributor</th>
+                    <th className="py-3.5 px-4">Action</th>
                     <th className="py-3.5 px-4">Target Entity</th>
-                    <th className="py-3.5 px-4">Activity Breakdown &amp; AI Data</th>
+                    <th className="py-3.5 px-4">Database Event Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/40 text-[13px]">
                   {filteredLogs.map((log) => {
-                    const isUpload = log.action.includes('IMAGE') || log.action.includes('UPLOAD');
-                    const isDispatch = log.action.includes('DISPATCH');
+                    const isUpload = log.action?.includes('IMAGE') || log.action?.includes('UPLOAD');
+                    const isDispatch = log.action?.includes('DISPATCH');
                     return (
                       <tr key={log.id} className="hover:bg-surface-container-low/60 transition-colors">
                         <td className="py-3.5 px-4 font-data-mono text-[12px] text-outline whitespace-nowrap">
@@ -246,7 +248,7 @@ export default function AdministrationView({
                         </td>
                         <td className="py-3.5 px-4 font-semibold text-on-surface whitespace-nowrap flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[11px]">
-                            {log.user.charAt(0)}
+                            {log.user?.charAt(0) || 'U'}
                           </div>
                           <span>{log.user}</span>
                         </td>
@@ -275,7 +277,90 @@ export default function AdministrationView({
         </div>
       )}
 
-      {/* Tab 2: Personnel & Access Control */}
+      {/* Tab 2: User Uploaded Scans Gallery (Fetched directly from Supabase incidents) */}
+      {activeTab === 'uploads' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-title-md font-bold text-on-surface text-[17px]">
+                User Uploaded Photos &amp; AI Analysis Results
+              </h3>
+              <p className="text-[12px] text-on-surface-variant">
+                Live database stream of photos submitted by users and analyzed by the computer vision pipeline.
+              </p>
+            </div>
+            <span className="text-[12px] font-data-mono text-outline">{incidentsList.length} Uploads in Database</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {incidentsList.map((inc) => (
+              <div
+                key={inc.id}
+                className="bg-surface-container-lowest rounded-2xl border border-outline-variant/60 shadow-xs overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all"
+              >
+                {/* Photo Thumbnail */}
+                <div className="relative h-44 bg-surface-container-high overflow-hidden">
+                  <img
+                    src={inc.imageUrl}
+                    alt={inc.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[10px] font-bold font-data-mono flex items-center gap-1 border border-white/20">
+                    <span className="material-symbols-outlined text-[13px] text-primary-fixed">verified</span>
+                    {inc.aiConfidence}
+                  </div>
+                  <div className="absolute top-2.5 right-2.5">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase font-data-mono ${
+                      inc.severity === 'critical' ? 'bg-risk-critical text-white' : 'bg-risk-high text-white'
+                    }`}>
+                      {inc.severity}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-bold text-[14px] text-on-surface line-clamp-1">{inc.title}</h4>
+                    <div className="flex items-center gap-1 text-[12px] text-outline mt-0.5">
+                      <span className="material-symbols-outlined text-[14px]">location_on</span>
+                      <span>{inc.sector}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[12px] text-on-surface-variant line-clamp-2 bg-surface-container-low p-2.5 rounded-xl border border-outline-variant/40">
+                    {inc.description}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-outline-variant/40">
+                    <div>
+                      <span className="text-outline block">Uploaded By:</span>
+                      <span className="font-semibold text-on-surface truncate block">{inc.reportedBy}</span>
+                    </div>
+                    <div>
+                      <span className="text-outline block">Estimated Waste:</span>
+                      <span className="font-bold text-risk-critical font-data-mono">{inc.estimatedWasteVolume}</span>
+                    </div>
+                  </div>
+
+                  {onOpenDispatch && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenDispatch({ id: inc.drainId || inc.id, drainName: inc.title, riskScore: 90 })}
+                      className="w-full mt-2 bg-primary hover:bg-surface-tint text-on-primary py-2 rounded-xl text-[11px] font-label-caps font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">send</span>
+                      Dispatch Cleanup Crew
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: Personnel & Access Control */}
       {activeTab === 'users' && (
         <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/60 shadow-xs overflow-hidden">
           <div className="p-6 border-b border-outline-variant/60 flex items-center justify-between">
@@ -341,7 +426,7 @@ export default function AdministrationView({
         </div>
       )}
 
-      {/* Tab 3: System Config */}
+      {/* Tab 4: System Config */}
       {activeTab === 'config' && (
         <div className="space-y-6">
           <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/60 shadow-xs">

@@ -5,8 +5,7 @@ export default function IncidentsView({
   incidents: initialIncidents = [],
   onSelectIncident,
   onOpenDispatch,
-  onUpdateStatus,
-  onOpenImageAnalysis
+  onUpdateStatus
 }) {
   const [incidentsList, setIncidentsList] = useState(initialIncidents);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -123,23 +122,13 @@ export default function IncidentsView({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={onOpenImageAnalysis}
-            className="bg-secondary text-on-secondary px-4 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-secondary/80 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
-            AI Photo Scan
-          </button>
-          <button
-            onClick={() => setShowNewIncidentModal(true)}
-            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">add_alert</span>
-            Log Incident Manually
-          </button>
-        </div>
+        <button
+          onClick={() => setShowNewIncidentModal(true)}
+          className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[18px]">add_alert</span>
+          Log Incident Manually
+        </button>
       </div>
 
       {/* Filters and Search Bar */}
