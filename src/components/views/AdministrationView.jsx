@@ -14,15 +14,24 @@ export default function AdministrationView({
   const permissions = getPermissionsForRole(userRole);
   const isAdmin = permissions.canManageUsers || userRole.toLowerCase().includes('admin');
 
-  const [activeTab, setActiveTab] = useState('activity'); // 'activity', 'uploads', 'users', 'config'
-  const [criticalThreshold, setCriticalThreshold] = useState(80);
-  const [highThreshold, setHighThreshold] = useState(65);
-  const [weatherApiInterval, setWeatherApiInterval] = useState(15);
-  const [activityFilter, setActivityFilter] = useState('all'); // 'all', 'IMAGE', 'DISPATCH', 'CONFIG'
+  const [activeTab, setActiveTab] = useState('users'); // 'users', 'activity', 'config'
+  const [userCategoryFilter, setUserCategoryFilter] = useState('all'); // 'all', 'officers', 'field', 'citizens'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const [selectedUserDetail, setSelectedUserDetail] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Municipal Officer', department: 'Environmental Health' });
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'Municipal Officer',
+    department: 'Operations Command',
+    municipalityId: 'winneba'
+  });
+
   const [toastMessage, setToastMessage] = useState(null);
-  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -30,11 +39,13 @@ export default function AdministrationView({
   };
 
   const [users, setUsers] = useState([
-    { id: 'usr-1', name: 'Kwame Mensah', email: 'kwame.mensah@winneba.gov.gh', role: 'Municipal Officer', department: 'Operations Command', status: 'Active' },
-    { id: 'usr-2', name: 'Abena Osei', email: 'abena.osei@winneba.gov.gh', role: 'Supervisor', department: 'Field Operations', status: 'Active' },
-    { id: 'usr-3', name: 'Dr. Joseph Ansah', email: 'j.ansah@winneba.gov.gh', role: 'Administrator', department: 'Municipal Assembly IT', status: 'Active' },
-    { id: 'usr-4', name: 'Emmanuel Kofi', email: 'e.kofi@winneba.gov.gh', role: 'Field Worker Lead', department: 'Rapid Strike Unit', status: 'On Mission' },
-    { id: 'usr-5', name: 'Francisca Arthur', email: 'f.arthur@winneba.gov.gh', role: 'Supervisor', department: 'Coastal & Sluice Taskforce', status: 'Active' }
+    { id: 'usr-1', name: 'Kwame Mensah', email: 'kwame.mensah@winneba.gov.gh', phone: '+233 24 555 0192', role: 'Municipal Officer', department: 'Operations Command', status: 'Active', municipalityId: 'winneba', reportsCount: 12 },
+    { id: 'usr-2', name: 'Abena Osei', email: 'abena.osei@winneba.gov.gh', phone: '+233 20 555 0831', role: 'Supervisor', department: 'Field Operations', status: 'Active', municipalityId: 'winneba', reportsCount: 28 },
+    { id: 'usr-3', name: 'Dr. Joseph Ansah', email: 'j.ansah@winneba.gov.gh', phone: '+233 33 232 2011', role: 'Administrator', department: 'Municipal Assembly IT', status: 'Active', municipalityId: 'winneba', reportsCount: 4 },
+    { id: 'usr-4', name: 'Emmanuel Kofi', email: 'e.kofi@winneba.gov.gh', phone: '+233 55 555 9940', role: 'Field Worker Lead', department: 'Rapid Strike Unit', status: 'On Mission', municipalityId: 'winneba', reportsCount: 35 },
+    { id: 'usr-5', name: 'Francisca Arthur', email: 'f.arthur@winneba.gov.gh', phone: '+233 26 555 3311', role: 'Supervisor', department: 'Coastal & Sluice Taskforce', status: 'Active', municipalityId: 'winneba', reportsCount: 19 },
+    { id: 'usr-6', name: 'Kofi Mensah (Citizen Lead)', email: 'kofi.m@community.gh', phone: '+233 24 555 1201', role: 'Citizen Champion', department: 'Central Market Watch', status: 'Active', municipalityId: 'winneba', reportsCount: 18 },
+    { id: 'usr-7', name: 'Ama Serwaa', email: 'ama.s@community.gh', phone: '+233 20 555 3390', role: 'Citizen Champion', department: 'Fisheries Environmental Guild', status: 'Active', municipalityId: 'winneba', reportsCount: 14 }
   ]);
 
   useEffect(() => {
@@ -43,46 +54,90 @@ export default function AdministrationView({
     }
   }, [propUsersList]);
 
-  const handleSaveThresholds = async () => {
-    setIsSavingConfig(true);
-    await dataService.updateSystemConfigs({
-      criticalThreshold,
-      highThreshold,
-      weatherApiInterval,
-      autoDispatchEnabled: false
-    });
-    setIsSavingConfig(false);
-    showToast(`✓ AI risk thresholds updated: Critical=${criticalThreshold}%, High=${highThreshold}%.`);
-    if (onRefreshData) onRefreshData();
-  };
+  // Filtered Users List
+  const filteredUsers = users.filter((u) => {
+    // Category filter
+    if (userCategoryFilter === 'officers' && u.role !== 'Municipal Officer' && u.role !== 'Administrator') return false;
+    if (userCategoryFilter === 'field' && u.role !== 'Supervisor' && u.role !== 'Field Worker Lead') return false;
+    if (userCategoryFilter === 'citizens' && !u.role?.includes('Citizen')) return false;
+
+    // Status filter
+    if (statusFilter !== 'all' && u.status !== statusFilter) return false;
+
+    // Search query
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchName = u.name?.toLowerCase().includes(q);
+      const matchEmail = u.email?.toLowerCase().includes(q);
+      const matchRole = u.role?.toLowerCase().includes(q);
+      const matchDept = u.department?.toLowerCase().includes(q);
+      if (!matchName && !matchEmail && !matchRole && !matchDept) return false;
+    }
+
+    return true;
+  });
 
   const handleInviteUser = async (e) => {
     e.preventDefault();
     if (!isAdmin) {
-      showToast('⚠️ Only Administrators can register new personnel.');
+      showToast('⚠️ Only Administrators can register new users.');
       return;
     }
+
     const created = await dataService.createUser({
       name: newUser.name,
       email: newUser.email,
+      phone: newUser.phone,
       role: newUser.role,
       department: newUser.department,
-      status: 'Active'
+      status: 'Active',
+      municipalityId: newUser.municipalityId
     });
+
     setUsers([created, ...users]);
     setShowInviteModal(false);
-    setNewUser({ name: '', email: '', role: 'Municipal Officer', department: 'Environmental Health' });
-    showToast(`✓ User ${created.name} registered and saved to Supabase!`);
+    setNewUser({
+      name: '',
+      email: '',
+      phone: '',
+      role: 'Municipal Officer',
+      department: 'Operations Command',
+      municipalityId: 'winneba'
+    });
+    showToast(`✓ User ${created.name} (${created.role}) registered and synced with Supabase!`);
     if (onRefreshData) onRefreshData();
   };
 
-  const filteredLogs = auditLogsList.filter((log) => {
-    if (activityFilter === 'all') return true;
-    if (activityFilter === 'IMAGE') return log.action?.includes('IMAGE') || log.action?.includes('UPLOAD');
-    if (activityFilter === 'DISPATCH') return log.action?.includes('DISPATCH');
-    if (activityFilter === 'CONFIG') return log.action?.includes('CONFIG') || log.action?.includes('THRESHOLD');
-    return log.action === activityFilter;
-  });
+  const handleToggleUserStatus = async (userObj) => {
+    setIsUpdatingStatus(true);
+    const newStatus = userObj.status === 'Active' ? 'Suspended' : 'Active';
+    
+    // Update local state and log audit record
+    setUsers(users.map(u => u.id === userObj.id ? { ...u, status: newStatus } : u));
+    if (selectedUserDetail?.id === userObj.id) {
+      setSelectedUserDetail({ ...selectedUserDetail, status: newStatus });
+    }
+
+    await dataService.addAuditLog({
+      user: currentUser?.name || 'Administrator',
+      action: 'USER_STATUS_CHANGE',
+      entity: userObj.name,
+      details: `Changed account status from ${userObj.status} to ${newStatus}.`
+    });
+
+    setIsUpdatingStatus(false);
+    showToast(`✓ User status updated to ${newStatus}!`);
+    if (onRefreshData) onRefreshData();
+  };
+
+  // Get user-specific activity history from auditLogsList
+  const getUserActivities = (userName) => {
+    if (!userName) return [];
+    return auditLogsList.filter(log =>
+      log.user?.toLowerCase().includes(userName.toLowerCase()) ||
+      log.details?.toLowerCase().includes(userName.toLowerCase())
+    );
+  };
 
   return (
     <div className="px-8 py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
@@ -98,33 +153,61 @@ export default function AdministrationView({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="material-symbols-outlined text-primary text-[24px]">admin_panel_settings</span>
-            <h1 className="font-headline-lg text-on-surface">Admin Command &amp; User Activity Hub</h1>
+            <span className="material-symbols-outlined text-primary text-[24px]">manage_accounts</span>
+            <h1 className="font-headline-lg text-on-surface">User Management &amp; Activity Tracking</h1>
           </div>
           <p className="font-body-md text-on-surface-variant">
-            Live database oversight of user image analyses, citizen reports, officer dispatches, and governance audit trail.
+            Comprehensive registry of municipal personnel, field staff, and active citizen contributors.
           </p>
         </div>
 
-        {/* Action button */}
-        {activeTab === 'users' && isAdmin && (
+        {isAdmin && (
           <button
             onClick={() => setShowInviteModal(true)}
             className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">person_add</span>
-            Add Municipal Staff
+            Register New User
           </button>
         )}
       </div>
 
-      {/* Tabs Bar */}
+      {/* Top User Overview Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
+          <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Total Registered Users</span>
+          <div className="text-[28px] font-bold text-on-surface mt-1">{users.length}</div>
+          <span className="text-[12px] text-primary font-bold mt-0.5 block">Across Winneba Assembly</span>
+        </div>
+
+        <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
+          <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Active Staff &amp; Officers</span>
+          <div className="text-[28px] font-bold text-on-surface mt-1">
+            {users.filter(u => u.role !== 'Citizen Champion' && u.status === 'Active').length}
+          </div>
+          <span className="text-[12px] text-on-surface-variant font-medium mt-0.5 block">Operations &amp; Field Commands</span>
+        </div>
+
+        <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
+          <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Citizen Champions</span>
+          <div className="text-[28px] font-bold text-primary mt-1">
+            {users.filter(u => u.role?.includes('Citizen')).length || 2}
+          </div>
+          <span className="text-[12px] text-primary font-semibold mt-0.5 block">Verified Community Watch</span>
+        </div>
+
+        <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
+          <span className="text-[11px] font-bold uppercase font-label-caps text-outline">User Activity Events</span>
+          <div className="text-[28px] font-bold text-on-surface mt-1">{auditLogsList.length}</div>
+          <span className="text-[12px] text-on-surface-variant font-medium mt-0.5 block">Logged in Supabase</span>
+        </div>
+      </div>
+
+      {/* Tabs */}
       <div className="flex border-b border-outline-variant/60 gap-8">
         {[
-          { id: 'activity', label: 'User Activities & Audit Logs', icon: 'browse_activity', badge: auditLogsList.length },
-          { id: 'uploads', label: 'User Uploaded Scans (Database)', icon: 'perm_media', badge: incidentsList.length },
-          { id: 'users', label: 'Personnel & Access Control', icon: 'group', badge: users.length },
-          { id: 'config', label: 'AI Thresholds & System Config', icon: 'tune' }
+          { id: 'users', label: 'User Directory & Profiles', icon: 'group', badge: filteredUsers.length },
+          { id: 'activity', label: 'Global User Activity Stream', icon: 'browse_activity', badge: auditLogsList.length },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -148,124 +231,133 @@ export default function AdministrationView({
         ))}
       </div>
 
-      {/* Tab 1: Live User Activities Stream (from Supabase audit_logs) */}
-      {activeTab === 'activity' && (
-        <div className="space-y-5">
-          {/* Top Activity KPI summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                <span className="material-symbols-outlined text-[26px]">database</span>
-              </div>
-              <div>
-                <span className="text-[11px] font-label-caps text-outline uppercase font-bold block">Logged Events</span>
-                <div className="font-display-lg text-[22px] font-bold text-on-surface mt-0.5">
-                  {auditLogsList.length}
-                </div>
-                <span className="text-[11px] text-primary font-semibold">Live Database Stream</span>
-              </div>
+      {/* Tab 1: User Directory & Management */}
+      {activeTab === 'users' && (
+        <div className="space-y-4">
+          {/* User Filters & Search Toolbar */}
+          <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/60 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* Search Input */}
+            <div className="relative w-full md:w-80">
+              <span className="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">search</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search user by name, email, department..."
+                className="w-full bg-surface-container-low border border-outline-variant rounded-xl pl-10 pr-4 py-2 text-[13px] text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+              />
             </div>
 
-            <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
-                <span className="material-symbols-outlined text-[26px]">person_pin</span>
-              </div>
-              <div>
-                <span className="text-[11px] font-label-caps text-outline uppercase font-bold block">Active Users</span>
-                <div className="font-display-lg text-[22px] font-bold text-on-surface mt-0.5">
-                  {users.length} Registered
-                </div>
-                <span className="text-[11px] text-on-surface-variant font-medium">Officers &amp; Supervisors</span>
-              </div>
-            </div>
-
-            <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[26px]">verified_user</span>
-              </div>
-              <div>
-                <span className="text-[11px] font-label-caps text-outline uppercase font-bold block">Audit Integrity</span>
-                <div className="font-display-lg text-[18px] font-bold text-on-surface mt-0.5">
-                  Immutable Ledger
-                </div>
-                <span className="text-[11px] text-primary font-semibold">Supabase RLS Synced</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Activity Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/60">
-            <div className="flex items-center gap-2">
-              <span className="font-label-caps text-[11px] uppercase font-bold text-outline">Filter Activity:</span>
-              <div className="flex flex-wrap gap-1.5">
+            {/* Category and Status Dropdowns */}
+            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+              <div className="flex bg-surface-container-low p-1 rounded-xl border border-outline-variant/50">
                 {[
-                  { id: 'all', label: 'All Activities' },
-                  { id: 'IMAGE', label: '📸 User Scans & Uploads' },
-                  { id: 'DISPATCH', label: '🚒 Field Dispatches' },
-                  { id: 'CONFIG', label: '⚙️ Threshold Updates' }
-                ].map((f) => (
+                  { id: 'all', label: 'All Users' },
+                  { id: 'officers', label: 'Officers' },
+                  { id: 'field', label: 'Field Staff' },
+                  { id: 'citizens', label: 'Citizens' },
+                ].map((c) => (
                   <button
-                    key={f.id}
-                    onClick={() => setActivityFilter(f.id)}
-                    className={`px-3 py-1 rounded-xl text-[12px] font-semibold transition-all cursor-pointer ${
-                      activityFilter === f.id
+                    key={c.id}
+                    onClick={() => setUserCategoryFilter(c.id)}
+                    className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all cursor-pointer ${
+                      userCategoryFilter === c.id
                         ? 'bg-primary text-on-primary shadow-xs'
-                        : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                        : 'text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
-                    {f.label}
+                    {c.label}
                   </button>
                 ))}
               </div>
-            </div>
 
-            <div className="text-[12px] font-data-mono text-outline">
-              Showing {filteredLogs.length} events
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-[12px] text-on-surface font-medium cursor-pointer"
+              >
+                <option value="all">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="On Mission">On Mission</option>
+                <option value="Suspended">Suspended</option>
+              </select>
             </div>
           </div>
 
-          {/* Live Activity Table */}
+          {/* Users Table */}
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/60 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-body-sm">
                 <thead>
                   <tr className="bg-surface-container-low border-b border-outline-variant text-[11px] uppercase font-label-caps text-outline">
-                    <th className="py-3.5 px-4">Timestamp</th>
-                    <th className="py-3.5 px-4">User / Contributor</th>
-                    <th className="py-3.5 px-4">Action</th>
-                    <th className="py-3.5 px-4">Target Entity</th>
-                    <th className="py-3.5 px-4">Database Event Details</th>
+                    <th className="py-3.5 px-4">User</th>
+                    <th className="py-3.5 px-4">Contact Info</th>
+                    <th className="py-3.5 px-4">Role &amp; Access</th>
+                    <th className="py-3.5 px-4">Department / Group</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/40 text-[13px]">
-                  {filteredLogs.map((log) => {
-                    const isUpload = log.action?.includes('IMAGE') || log.action?.includes('UPLOAD');
-                    const isDispatch = log.action?.includes('DISPATCH');
+                  {filteredUsers.map((usr) => {
+                    const isCitizen = usr.role?.includes('Citizen');
                     return (
-                      <tr key={log.id} className="hover:bg-surface-container-low/60 transition-colors">
-                        <td className="py-3.5 px-4 font-data-mono text-[12px] text-outline whitespace-nowrap">
-                          {log.timestamp}
-                        </td>
-                        <td className="py-3.5 px-4 font-semibold text-on-surface whitespace-nowrap flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[11px]">
-                            {log.user?.charAt(0) || 'U'}
+                      <tr
+                        key={usr.id}
+                        onClick={() => setSelectedUserDetail(usr)}
+                        className="hover:bg-surface-container-low/60 transition-colors cursor-pointer"
+                      >
+                        <td className="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-[13px] ${
+                            isCitizen ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-primary/10 text-primary'
+                          }`}>
+                            {usr.name.charAt(0)}
                           </div>
-                          <span>{log.user}</span>
+                          <div>
+                            <div className="font-bold text-[14px] text-on-surface">{usr.name}</div>
+                            <div className="text-[10px] text-outline font-data-mono">{usr.id}</div>
+                          </div>
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold font-data-mono ${
-                            isUpload
-                              ? 'bg-primary-container text-on-primary-container'
-                              : isDispatch
+                          <div className="font-data-mono text-[12px] text-on-surface">{usr.email}</div>
+                          {usr.phone && <div className="text-[11px] text-outline font-data-mono">{usr.phone}</div>}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                            usr.role === 'Administrator'
+                              ? 'bg-purple-100 text-purple-900'
+                              : isCitizen
                               ? 'bg-amber-100 text-amber-900'
-                              : 'bg-surface-container text-on-surface-variant'
+                              : 'bg-primary/10 text-primary'
                           }`}>
-                            {log.action}
+                            {usr.role}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 font-bold text-primary whitespace-nowrap">{log.entity}</td>
-                        <td className="py-3.5 px-4 text-on-surface-variant leading-relaxed">
-                          {log.details}
+                        <td className="py-3.5 px-4 text-on-surface-variant font-medium">
+                          {usr.department}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                            usr.status === 'Active'
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : usr.status === 'On Mission'
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'bg-error-container text-on-error-container'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              usr.status === 'Active' ? 'bg-emerald-600' : usr.status === 'On Mission' ? 'bg-blue-600' : 'bg-risk-critical'
+                            }`}></span>
+                            {usr.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedUserDetail(usr)}
+                            className="text-primary font-bold text-[12px] hover:underline px-2 py-1 rounded cursor-pointer"
+                          >
+                            View Profile
+                          </button>
                         </td>
                       </tr>
                     );
@@ -277,147 +369,46 @@ export default function AdministrationView({
         </div>
       )}
 
-      {/* Tab 2: User Uploaded Scans Gallery (Fetched directly from Supabase incidents) */}
-      {activeTab === 'uploads' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-title-md font-bold text-on-surface text-[17px]">
-                User Uploaded Photos &amp; AI Analysis Results
-              </h3>
-              <p className="text-[12px] text-on-surface-variant">
-                Live database stream of photos submitted by users and analyzed by the computer vision pipeline.
-              </p>
-            </div>
-            <span className="text-[12px] font-data-mono text-outline">{incidentsList.length} Uploads in Database</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {incidentsList.map((inc) => (
-              <div
-                key={inc.id}
-                className="bg-surface-container-lowest rounded-2xl border border-outline-variant/60 shadow-xs overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all"
-              >
-                {/* Photo Thumbnail */}
-                <div className="relative h-44 bg-surface-container-high overflow-hidden">
-                  <img
-                    src={inc.imageUrl}
-                    alt={inc.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[10px] font-bold font-data-mono flex items-center gap-1 border border-white/20">
-                    <span className="material-symbols-outlined text-[13px] text-primary-fixed">verified</span>
-                    {inc.aiConfidence}
-                  </div>
-                  <div className="absolute top-2.5 right-2.5">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase font-data-mono ${
-                      inc.severity === 'critical' ? 'bg-risk-critical text-white' : 'bg-risk-high text-white'
-                    }`}>
-                      {inc.severity}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h4 className="font-bold text-[14px] text-on-surface line-clamp-1">{inc.title}</h4>
-                    <div className="flex items-center gap-1 text-[12px] text-outline mt-0.5">
-                      <span className="material-symbols-outlined text-[14px]">location_on</span>
-                      <span>{inc.sector}</span>
-                    </div>
-                  </div>
-
-                  <p className="text-[12px] text-on-surface-variant line-clamp-2 bg-surface-container-low p-2.5 rounded-xl border border-outline-variant/40">
-                    {inc.description}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-outline-variant/40">
-                    <div>
-                      <span className="text-outline block">Uploaded By:</span>
-                      <span className="font-semibold text-on-surface truncate block">{inc.reportedBy}</span>
-                    </div>
-                    <div>
-                      <span className="text-outline block">Estimated Waste:</span>
-                      <span className="font-bold text-risk-critical font-data-mono">{inc.estimatedWasteVolume}</span>
-                    </div>
-                  </div>
-
-                  {onOpenDispatch && (
-                    <button
-                      type="button"
-                      onClick={() => onOpenDispatch({ id: inc.drainId || inc.id, drainName: inc.title, riskScore: 90 })}
-                      className="w-full mt-2 bg-primary hover:bg-surface-tint text-on-primary py-2 rounded-xl text-[11px] font-label-caps font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">send</span>
-                      Dispatch Cleanup Crew
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tab 3: Personnel & Access Control */}
-      {activeTab === 'users' && (
+      {/* Tab 2: Global Activity Feed */}
+      {activeTab === 'activity' && (
         <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/60 shadow-xs overflow-hidden">
-          <div className="p-6 border-b border-outline-variant/60 flex items-center justify-between">
-            <div>
-              <h3 className="font-title-md font-bold text-on-surface text-[17px]">
-                Authorized Municipal Personnel
-              </h3>
-              <p className="text-[12px] text-on-surface-variant">
-                Role-based access credentials, jurisdiction assignments, and department authority.
-              </p>
-            </div>
-            <span className="text-[12px] font-data-mono text-outline">{users.length} Active Staff</span>
+          <div className="p-5 border-b border-outline-variant/60 flex items-center justify-between">
+            <h3 className="font-title-md font-bold text-on-surface text-[17px]">
+              Live User Activity &amp; Audit Log
+            </h3>
+            <span className="text-[12px] font-data-mono text-outline">{auditLogsList.length} Logged Events</span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-body-sm">
               <thead>
                 <tr className="bg-surface-container-low border-b border-outline-variant text-[11px] uppercase font-label-caps text-outline">
-                  <th className="py-3.5 px-4">Name</th>
-                  <th className="py-3.5 px-4">Official Email</th>
-                  <th className="py-3.5 px-4">Role</th>
-                  <th className="py-3.5 px-4">Department</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="py-3.5 px-4">Timestamp</th>
+                  <th className="py-3.5 px-4">User</th>
+                  <th className="py-3.5 px-4">Action</th>
+                  <th className="py-3.5 px-4">Target Entity</th>
+                  <th className="py-3.5 px-4">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/40 text-[13px]">
-                {users.map((usr) => (
-                  <tr key={usr.id} className="hover:bg-surface-container-low/60 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[12px]">
-                        {usr.name.charAt(0)}
+                {auditLogsList.map((log) => (
+                  <tr key={log.id} className="hover:bg-surface-container-low/60 transition-colors">
+                    <td className="py-3.5 px-4 font-data-mono text-[12px] text-outline whitespace-nowrap">
+                      {log.timestamp}
+                    </td>
+                    <td className="py-3.5 px-4 font-semibold text-on-surface whitespace-nowrap flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[11px]">
+                        {log.user?.charAt(0) || 'U'}
                       </div>
-                      {usr.name}
+                      <span>{log.user}</span>
                     </td>
-                    <td className="py-3.5 px-4 font-data-mono text-[12px] text-outline">{usr.email}</td>
                     <td className="py-3.5 px-4">
-                      <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[11px] font-bold">
-                        {usr.role}
+                      <span className="bg-surface-container px-2 py-0.5 rounded text-[11px] font-bold font-data-mono">
+                        {log.action}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-on-surface-variant">{usr.department}</td>
-                    <td className="py-3.5 px-4">
-                      <span className="flex items-center gap-1 text-[12px] font-semibold text-primary">
-                        <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                        {usr.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => showToast(`Permissions verified for ${usr.name}`)}
-                        className="text-on-surface-variant hover:text-primary p-1 rounded transition-colors cursor-pointer"
-                        title="Edit Permissions"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                      </button>
-                    </td>
+                    <td className="py-3.5 px-4 font-bold text-primary">{log.entity}</td>
+                    <td className="py-3.5 px-4 text-on-surface-variant">{log.details}</td>
                   </tr>
                 ))}
               </tbody>
@@ -426,73 +417,129 @@ export default function AdministrationView({
         </div>
       )}
 
-      {/* Tab 4: System Config */}
-      {activeTab === 'config' && (
-        <div className="space-y-6">
-          <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/60 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-title-md font-bold text-on-surface text-[17px]">
-                AI Risk Threshold Calibration
-              </h3>
+      {/* User Detail & Activity Modal / Drawer */}
+      {selectedUserDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-surface-container-lowest rounded-3xl shadow-2xl border border-outline-variant w-full max-w-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="bg-primary px-6 py-5 text-on-primary flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center font-bold text-[18px]">
+                  {selectedUserDetail.name.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="font-title-md font-bold text-[18px]">{selectedUserDetail.name}</h3>
+                  <p className="text-[12px] text-white/80">{selectedUserDetail.role} • {selectedUserDetail.department}</p>
+                </div>
+              </div>
               <button
-                onClick={handleSaveThresholds}
-                disabled={isSavingConfig}
-                className="bg-primary text-on-primary px-4 py-1.5 rounded-xl text-[12px] font-label-caps hover:bg-surface-tint shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                onClick={() => setSelectedUserDetail(null)}
+                className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10"
               >
-                <span className="material-symbols-outlined text-[16px]">save</span>
-                {isSavingConfig ? 'Saving...' : 'Save Changes'}
+                <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/40 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-on-surface text-[13px]">Critical Incident Threshold</span>
-                  <span className="font-bold text-risk-critical text-[15px] font-data-mono">{criticalThreshold}% Blockage</span>
+            {/* Profile Content */}
+            <div className="p-6 overflow-y-auto space-y-5 flex-1 text-body-sm">
+              {/* User Info Card */}
+              <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/60 grid grid-cols-2 gap-3 text-[13px]">
+                <div>
+                  <span className="text-outline text-[11px] block">Email Address:</span>
+                  <span className="font-semibold text-on-surface font-data-mono">{selectedUserDetail.email}</span>
                 </div>
-                <input
-                  type="range"
-                  min="50"
-                  max="95"
-                  value={criticalThreshold}
-                  onChange={(e) => setCriticalThreshold(Number(e.target.value))}
-                  className="w-full accent-risk-critical cursor-pointer"
-                />
-                <p className="text-[11px] text-outline">
-                  Drains exceeding this blockage trigger automated emergency dispatch directives.
-                </p>
+                <div>
+                  <span className="text-outline text-[11px] block">Phone / Mobile:</span>
+                  <span className="font-semibold text-on-surface font-data-mono">{selectedUserDetail.phone || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-outline text-[11px] block">Jurisdiction:</span>
+                  <span className="font-semibold text-on-surface uppercase font-data-mono">Winneba Municipal Assembly</span>
+                </div>
+                <div>
+                  <span className="text-outline text-[11px] block">Account Status:</span>
+                  <span className="font-bold text-primary">{selectedUserDetail.status}</span>
+                </div>
               </div>
 
-              <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/40 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-on-surface text-[13px]">High Risk Pre-Storm Threshold</span>
-                  <span className="font-bold text-risk-high text-[15px] font-data-mono">{highThreshold}% Blockage</span>
+              {/* User Action Controls */}
+              <div className="flex items-center justify-between p-3.5 bg-surface-container rounded-xl border border-outline-variant/40">
+                <div className="text-[12px]">
+                  <span className="font-bold text-on-surface block">Account Access Management</span>
+                  <span className="text-outline text-[11px]">Suspend or activate this user profile</span>
                 </div>
-                <input
-                  type="range"
-                  min="30"
-                  max="80"
-                  value={highThreshold}
-                  onChange={(e) => setHighThreshold(Number(e.target.value))}
-                  className="w-full accent-risk-high cursor-pointer"
-                />
-                <p className="text-[11px] text-outline">
-                  Triggers early mechanical de-silting notifications 24 hours prior to rain forecast.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => handleToggleUserStatus(selectedUserDetail)}
+                  disabled={isUpdatingStatus}
+                  className={`px-4 py-2 rounded-xl text-[12px] font-bold font-label-caps transition-all cursor-pointer ${
+                    selectedUserDetail.status === 'Active'
+                      ? 'bg-error-container text-on-error-container hover:bg-red-200'
+                      : 'bg-primary text-on-primary hover:bg-surface-tint'
+                  }`}
+                >
+                  {selectedUserDetail.status === 'Active' ? 'Suspend Account' : 'Reactivate Account'}
+                </button>
               </div>
+
+              {/* Activity History for this Specific User */}
+              <div className="space-y-2.5">
+                <h4 className="font-title-md font-bold text-on-surface text-[15px] flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-[18px]">history</span>
+                  User Activity History (Database Trail)
+                </h4>
+
+                {getUserActivities(selectedUserDetail.name).length > 0 ? (
+                  <div className="space-y-2">
+                    {getUserActivities(selectedUserDetail.name).map((act) => (
+                      <div
+                        key={act.id}
+                        className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/60 flex items-start justify-between gap-3 text-[12px]"
+                      >
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-primary font-data-mono text-[11px]">{act.action}</span>
+                            <span className="text-outline">•</span>
+                            <span className="font-semibold text-on-surface">{act.entity}</span>
+                          </div>
+                          <p className="text-on-surface-variant text-[11px]">{act.details}</p>
+                        </div>
+                        <span className="font-data-mono text-[10px] text-outline whitespace-nowrap">
+                          {act.timestamp}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-surface-container-low p-4 rounded-xl text-center text-outline text-[12px]">
+                    No audit records logged yet for this user.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant/60 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedUserDetail(null)}
+                className="bg-surface-container hover:bg-surface-container-high px-5 py-2 rounded-xl text-[12px] font-label-caps font-bold cursor-pointer"
+              >
+                Close Profile
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add User Modal */}
+      {/* Register User Modal */}
       {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant w-full max-w-md overflow-hidden animate-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-surface-container-lowest rounded-3xl shadow-2xl border border-outline-variant w-full max-w-md overflow-hidden animate-in zoom-in-95">
             <div className="bg-primary px-6 py-4 text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[22px]">person_add</span>
-                <h3 className="font-title-md font-bold text-[17px]">Add Municipal Staff</h3>
+                <h3 className="font-title-md font-bold text-[17px]">Register New User</h3>
               </div>
               <button onClick={() => setShowInviteModal(false)} className="p-1 rounded-lg text-white/80 hover:text-white">
                 <span className="material-symbols-outlined text-[20px]">close</span>
@@ -501,7 +548,7 @@ export default function AdministrationView({
 
             <form onSubmit={handleInviteUser} className="p-6 space-y-4 text-body-sm">
               <div>
-                <label className="block font-semibold text-on-surface mb-1 text-[13px]">Full Name</label>
+                <label className="block font-semibold text-on-surface mb-1 text-[12px]">Full Name</label>
                 <input
                   type="text"
                   required
@@ -513,7 +560,7 @@ export default function AdministrationView({
               </div>
 
               <div>
-                <label className="block font-semibold text-on-surface mb-1 text-[13px]">Official Email</label>
+                <label className="block font-semibold text-on-surface mb-1 text-[12px]">Official / Citizen Email</label>
                 <input
                   type="email"
                   required
@@ -525,32 +572,55 @@ export default function AdministrationView({
               </div>
 
               <div>
-                <label className="block font-semibold text-on-surface mb-1 text-[13px]">Assigned Role (RBAC)</label>
+                <label className="block font-semibold text-on-surface mb-1 text-[12px]">Phone Number</label>
+                <input
+                  type="tel"
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  placeholder="+233 24 000 0000"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-2.5 text-body-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-on-surface mb-1 text-[12px]">Assigned Role</label>
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                   className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-2.5 text-body-sm"
                 >
-                  <option value="Municipal Officer">Municipal Officer (Dashboard, Dispatch, Analytics)</option>
-                  <option value="Supervisor">Supervisor (Field Operations, Team Management)</option>
-                  <option value="Field Worker Lead">Field Worker Lead (Task Assignments)</option>
-                  <option value="Administrator">Administrator (Full Access &amp; Config)</option>
+                  <option value="Municipal Officer">Municipal Officer (Operations Lead)</option>
+                  <option value="Supervisor">Supervisor (Field Lead)</option>
+                  <option value="Field Worker Lead">Field Worker Lead (Rapid Strike)</option>
+                  <option value="Citizen Champion">Citizen Champion (Community Reporter)</option>
+                  <option value="Administrator">Administrator (Full Admin)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-on-surface mb-1 text-[12px]">Department / Sector</label>
+                <input
+                  type="text"
+                  value={newUser.department}
+                  onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
+                  placeholder="e.g. Operations Command, Central Market Watch"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-2.5 text-body-sm"
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowInviteModal(false)}
-                  className="px-4 py-2 rounded-xl text-on-surface-variant font-label-caps text-[12px] hover:bg-surface-container"
+                  className="px-4 py-2 rounded-xl text-on-surface-variant font-label-caps text-[12px] hover:bg-surface-container cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-primary text-on-primary px-5 py-2 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs"
+                  className="bg-primary text-on-primary px-5 py-2 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs cursor-pointer"
                 >
-                  Confirm &amp; Register User
+                  Register &amp; Save
                 </button>
               </div>
             </form>

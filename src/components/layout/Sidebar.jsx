@@ -47,7 +47,7 @@ export default function Sidebar({
       title: 'Global',
       items: [
         { id: 'alerts', label: 'Alerts', icon: 'notifications_active', badge: '4' },
-        { id: 'administration', label: 'Administration', icon: 'settings' },
+        { id: 'administration', label: 'User Management', icon: 'manage_accounts' },
       ]
     }
   ];
