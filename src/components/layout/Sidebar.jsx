@@ -38,7 +38,7 @@ export default function Sidebar({
     {
       title: 'Intelligence',
       items: [
-        { id: 'waste-intelligence', label: 'Waste Intelligence', icon: 'recycling' },
+        { id: 'waste-intelligence', label: 'Refuse & Rewards', icon: 'military_tech' },
         { id: 'ai-insights', label: 'AI Insights', icon: 'psychology_alt' },
         { id: 'analytics', label: 'Analytics', icon: 'monitoring' },
       ]

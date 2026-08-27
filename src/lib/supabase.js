@@ -716,6 +716,72 @@ export const dataService = {
     };
   },
 
+  // Fetch Citizen Contributor & Refuse Tracking Leaderboard
+  async getCitizenRewards(municipalityId = 'winneba') {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        let query = supabase.from('citizen_rewards').select('*');
+        if (municipalityId && municipalityId !== 'all') {
+          query = query.eq('municipality_id', municipalityId);
+        }
+        const { data, error } = await query.order('reward_points', { ascending: false });
+        if (!error && data?.length) {
+          return data.map(c => ({
+            id: c.id,
+            userName: c.user_name,
+            phone: c.phone,
+            email: c.email,
+            reportsCount: Number(c.reports_count || 0),
+            refuseKgReported: Number(c.refuse_kg_reported || 0),
+            refuseKgCleared: Number(c.refuse_kg_cleared || 0),
+            rewardPoints: Number(c.reward_points || 0),
+            tier: c.tier || 'Bronze Contributor',
+            rewardsRedeemedGhs: Number(c.rewards_redeemed_ghs || 0),
+            status: c.status || 'Active',
+            lastReportAt: c.last_report_at
+          }));
+        }
+      } catch (err) {
+        console.error('Supabase getCitizenRewards error:', err);
+      }
+    }
+    return [];
+  },
+
+  // Disburse / Redeem Citizen Eco-Reward
+  async redeemCitizenReward(citizenId, amountGhs = 50.00) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: current, error: fetchErr } = await supabase
+          .from('citizen_rewards')
+          .select('*')
+          .eq('id', citizenId)
+          .single();
+
+        if (!fetchErr && current) {
+          const updatedRedeemed = Number(current.rewards_redeemed_ghs || 0) + Number(amountGhs);
+          const { data, error } = await supabase
+            .from('citizen_rewards')
+            .update({ rewards_redeemed_ghs: updatedRedeemed })
+            .eq('id', citizenId)
+            .select();
+
+          if (!error && data?.length) {
+            await this.addAuditLog({
+              action: 'ECO_REWARD_DISBURSED',
+              entity: `Citizen ${current.user_name}`,
+              details: `Disbursed GHS ${amountGhs.toFixed(2)} eco-reward for refuse cleanup & flood prevention impact.`
+            });
+            return data[0];
+          }
+        }
+      } catch (err) {
+        console.error('Supabase redeemCitizenReward error:', err);
+      }
+    }
+    return null;
+  },
+
   // Update blockage simulation
   async simulateDrainCondition(drainId, newBlockagePercent, rainfallMm = 0) {
     const calculatedRisk = Math.min(100, Math.round(newBlockagePercent * 0.7 + (rainfallMm / 100) * 40));

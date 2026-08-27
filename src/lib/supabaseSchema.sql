@@ -131,4 +131,23 @@ VALUES
 ('team-1', 'Rapid Response Unit Alpha', 'Kwame Mensah', 'Emergency Culvert Clearance', 8, 'Available', 'Sector 2 Depot', 'Truck GH-WN-402 (Vac & Jetter)', 4.9, '+233 24 555 0192'),
 ('team-2', 'Drainage Squad 2', 'Abena Osei', 'Structural Masonry & Swale Clearing', 6, 'On Mission', 'South Residential (Drain D-117)', 'Flatbed GH-WN-118 + Mini-Bobcat', 4.8, '+233 20 555 0831'),
 ('team-3', 'Emergency Strike Unit', 'Emmanuel Kofi', 'Flood Prevention & High-Volume Pumps', 10, 'On Mission', 'North Campus Link (Drain D-104)', 'Heavy Support Rig GH-WN-900', 5.0, '+233 55 555 9940')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;-- 11. CITIZEN ECO-REWARDS & REFUSE TRACKER TABLE
+CREATE TABLE IF NOT EXISTS citizen_rewards (
+  id TEXT PRIMARY KEY,
+  municipality_id TEXT REFERENCES municipalities(id) ON DELETE SET NULL,
+  user_name TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
+  reports_count INT DEFAULT 0,
+  refuse_kg_reported NUMERIC(10, 2) DEFAULT 0.0,
+  refuse_kg_cleared NUMERIC(10, 2) DEFAULT 0.0,
+  reward_points INT DEFAULT 0,
+  tier TEXT DEFAULT 'Bronze Contributor',
+  rewards_redeemed_ghs NUMERIC(10, 2) DEFAULT 0.00,
+  status TEXT DEFAULT 'Active',
+  last_report_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE citizen_rewards ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public full access to citizen_rewards" ON citizen_rewards FOR ALL USING (true) WITH CHECK (true);

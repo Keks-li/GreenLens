@@ -50,6 +50,7 @@ export default function App() {
   const [alerts, setAlerts] = useState([]);
   const [weather, setWeather] = useState(null);
   const [usersList, setUsersList] = useState([]);
+  const [citizenRewards, setCitizenRewards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Modals & Selection State
@@ -83,7 +84,8 @@ export default function App() {
         logsRes,
         alertsRes,
         weatherRes,
-        usersRes
+        usersRes,
+        rewardsRes
       ] = await Promise.all([
         dataService.getMunicipalities(),
         dataService.getKpis(muniId),
@@ -95,7 +97,8 @@ export default function App() {
         dataService.getAuditLogs(),
         dataService.getAlerts(muniId),
         dataService.getWeather(muniId),
-        dataService.getUsers(muniId)
+        dataService.getUsers(muniId),
+        dataService.getCitizenRewards(muniId)
       ]);
 
       if (munisRes?.length) setMunicipalitiesList(munisRes);
@@ -109,6 +112,7 @@ export default function App() {
       if (alertsRes) setAlerts(alertsRes);
       if (weatherRes) setWeather(weatherRes);
       if (usersRes) setUsersList(usersRes);
+      if (rewardsRes) setCitizenRewards(rewardsRes);
     } catch (err) {
       console.error('Failed to load database records:', err);
     } finally {
@@ -318,9 +322,9 @@ export default function App() {
 
           {currentView === 'waste-intelligence' && (
             <WasteIntelligenceView
-              incidents={incidents}
-              drainageSegments={drainageSegments}
+              citizenRewards={citizenRewards}
               onOpenDispatch={handleOpenDispatch}
+              onRefreshData={() => loadData(selectedMunicipalityId)}
             />
           )}
 
