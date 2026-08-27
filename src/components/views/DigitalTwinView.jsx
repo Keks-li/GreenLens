@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
+import OpenStreetMapViewer from '../map/OpenStreetMapViewer';
 
 export default function DigitalTwinView({
   drainageSegments = [],
   onSelectSegment,
   onOpenDispatch
 }) {
-  const [zoomLevel, setZoomLevel] = useState(1);
   const [isPanelOpen, setIsPanelOpen] = useState(true);
-  const [layerOpacity, setLayerOpacity] = useState(85); // Transparent GIS layer control
-  
-  // Default selected node is Drain D-102
   const [selectedNodeId, setSelectedNodeId] = useState('D-102');
 
   const nodesData = {
@@ -33,7 +30,7 @@ export default function DigitalTwinView({
         { time: '14:02:22', id: 'WTR-LV-01', status: '+14cm/hr', type: 'high' },
         { time: '14:02:25', id: 'SNR-VL-89', status: 'OK', type: 'ok' },
       ],
-      coords: { x: 450, y: 350 }
+      coords: { lat: 5.3562, lng: -0.6231 }
     },
     'D-117': {
       id: 'D-117',
@@ -53,7 +50,7 @@ export default function DigitalTwinView({
         { time: '14:01:55', id: 'SNR-DP-08', status: 'FLOW_WARN', type: 'warning' },
         { time: '14:02:05', id: 'CAM-AI-09', status: 'RUBBLE_DET', type: 'high' },
       ],
-      coords: { x: 600, y: 650 }
+      coords: { lat: 5.3489, lng: -0.6190 }
     },
     'D-104': {
       id: 'D-104',
@@ -72,7 +69,7 @@ export default function DigitalTwinView({
         { time: '14:03:01', id: 'SNR-LV-10', status: 'CRIT_SURGE', type: 'critical' },
         { time: '14:03:10', id: 'CAM-AI-11', status: 'BACKFLOW', type: 'critical' },
       ],
-      coords: { x: 400, y: 600 }
+      coords: { lat: 5.3645, lng: -0.6280 }
     },
     'D-201': {
       id: 'D-201',
@@ -91,241 +88,33 @@ export default function DigitalTwinView({
         { time: '14:00:20', id: 'SNR-VL-19', status: 'OK', type: 'ok' },
         { time: '14:01:00', id: 'SNR-DP-02', status: 'CLEAR', type: 'ok' },
       ],
-      coords: { x: 700, y: 500 }
+      coords: { lat: 5.3510, lng: -0.6310 }
     }
   };
 
   const currentNode = nodesData[selectedNodeId] || nodesData['D-102'];
 
-  const handleSelectNode = (nodeId) => {
-    setSelectedNodeId(nodeId);
+  const handleSelectNode = (segment) => {
+    const id = segment?.id || segment;
+    setSelectedNodeId(id);
     setIsPanelOpen(true);
     if (onSelectSegment) {
-      const match = drainageSegments.find((d) => d.id === nodeId);
-      onSelectSegment(match || { id: nodeId, name: nodeId });
+      const match = drainageSegments.find((d) => d.id === id);
+      onSelectSegment(match || { id, name: id });
     }
   };
 
-  const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 0.25, 2.2));
-  const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 0.25, 0.75));
-  const handleResetZoom = () => setZoomLevel(1);
-
   return (
     <div className="flex flex-col w-full h-[calc(100vh-64px)] overflow-hidden relative font-body-lg text-on-surface bg-background select-none">
-      {/* Map Container (Simulated with Satellite Telemetry Background & Vector Overlays) */}
-      <div className="absolute inset-0 w-full h-full bg-surface-dim z-0 overflow-hidden">
-        <div
-          className="w-full h-full bg-cover bg-center opacity-85 transition-transform duration-300 ease-out origin-center"
-          data-location="Winneba, Ghana, Drainage Network"
-          style={{
-            transform: `scale(${zoomLevel})`,
-            backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlMvKcDFINtmI0OSEES1xmfAGaL9-VepkWY5HWmsSO1tzrFKaRzJOOimoUsydgqEJRM5A_lR_cz05vHwhgenP-4NNA19XdqcE4kelRWGo2SW99hq1LkW4B54p4N6X3WkVPWF9bok96PZ1oSX7jQkZi6nPR9VJdcK7cJ8lBFDAlUWMNY1R-cSwZ8zoXmCISzx31iHZOAFNqtra3ucpSEH5mAf0mMDdSWdcMjYIp5Q4CAfzotOq0SdrNNA')`,
-          }}
-        >
-          {/* Overlay Scrim for Command Center Aesthetic */}
-          <div className="absolute inset-0 bg-inverse-surface/10 pointer-events-none mix-blend-multiply"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-surface-dim/80 via-transparent to-transparent pointer-events-none"></div>
-
-          {/* Simulated Map Data Layers (SVG Overlays with Dynamic Transparency) */}
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none z-10 drop-shadow-md transition-opacity duration-200"
-            preserveAspectRatio="xMidYMid slice"
-            viewBox="0 0 1000 1000"
-            style={{ opacity: layerOpacity / 100 }}
-          >
-            {/* Healthy Drain Lines */}
-            <path
-              d="M 100 200 Q 300 150 450 350 T 700 500"
-              fill="none"
-              opacity="0.6"
-              stroke="#7BC96F"
-              strokeDasharray="8 4"
-              strokeWidth="4"
-            />
-            <path
-              d="M 200 800 L 400 600 L 600 650"
-              fill="none"
-              opacity="0.8"
-              stroke="#7BC96F"
-              strokeWidth="6"
-            />
-
-            {/* Warning Lines */}
-            <path
-              d="M 600 650 Q 800 600 900 800"
-              fill="none"
-              opacity="0.9"
-              stroke="#FFB100"
-              strokeWidth="5"
-            />
-
-            {/* Critical Lines (with pulsating opacity animation) */}
-            <path
-              d="M 450 350 L 550 450 L 400 600"
-              fill="none"
-              stroke="#BA1A1A"
-              strokeLinecap="round"
-              strokeWidth="8"
-            >
-              <animate
-                attributeName="opacity"
-                dur="2s"
-                repeatCount="indefinite"
-                values="1;0.4;1"
-              />
-            </path>
-
-            {/* Interactive Nodes / Junctions */}
-            {/* Node D-102 (Critical) */}
-            <g
-              className="pointer-events-auto cursor-pointer"
-              onClick={() => handleSelectNode('D-102')}
-            >
-              <circle
-                cx="450"
-                cy="350"
-                fill="#BA1A1A"
-                r={selectedNodeId === 'D-102' ? '10' : '8'}
-                className="transition-all"
-              />
-              <circle cx="450" cy="350" fill="none" r="16" stroke="#BA1A1A" strokeWidth="2">
-                <animate
-                  attributeName="r"
-                  dur="2s"
-                  repeatCount="indefinite"
-                  values="16; 32; 16"
-                />
-                <animate
-                  attributeName="opacity"
-                  dur="2s"
-                  repeatCount="indefinite"
-                  values="1; 0; 1"
-                />
-              </circle>
-            </g>
-
-            {/* Node D-117 (High/Warning) */}
-            <g
-              className="pointer-events-auto cursor-pointer"
-              onClick={() => handleSelectNode('D-117')}
-            >
-              <circle
-                cx="600"
-                cy="650"
-                fill="#FFB100"
-                r={selectedNodeId === 'D-117' ? '9' : '6'}
-                stroke="#fff"
-                strokeWidth="1.5"
-              />
-            </g>
-
-            {/* Node D-104 (Critical) */}
-            <g
-              className="pointer-events-auto cursor-pointer"
-              onClick={() => handleSelectNode('D-104')}
-            >
-              <circle
-                cx="400"
-                cy="600"
-                fill="#BA1A1A"
-                r={selectedNodeId === 'D-104' ? '12' : '10'}
-                stroke="#fff"
-                strokeWidth="2"
-              />
-            </g>
-
-            {/* Node D-201 (Healthy) */}
-            <g
-              className="pointer-events-auto cursor-pointer"
-              onClick={() => handleSelectNode('D-201')}
-            >
-              <circle
-                cx="700"
-                cy="500"
-                fill="#7BC96F"
-                r={selectedNodeId === 'D-201' ? '8' : '6'}
-                stroke="#fff"
-                strokeWidth="1.5"
-              />
-            </g>
-          </svg>
-        </div>
-      </div>
-
-      {/* Map Controls (Top Left) with Transparency Slider */}
-      <div className="absolute top-6 left-6 z-20 flex flex-col gap-2">
-        <div className="bg-surface/90 backdrop-blur-md rounded-xl shadow-md p-1.5 flex flex-col gap-1 border border-outline-variant/50">
-          <button
-            onClick={handleZoomIn}
-            className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer"
-            title="Zoom In"
-          >
-            <span className="material-symbols-outlined text-[20px]">add</span>
-          </button>
-          <div className="w-full h-px bg-outline-variant/50 my-0.5"></div>
-          <button
-            onClick={handleZoomOut}
-            className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer"
-            title="Zoom Out"
-          >
-            <span className="material-symbols-outlined text-[20px]">remove</span>
-          </button>
-        </div>
-
-        <button
-          onClick={handleResetZoom}
-          className="bg-surface/90 backdrop-blur-md rounded-xl shadow-md w-10 h-10 flex items-center justify-center text-primary hover:bg-primary-container/20 transition-colors border border-outline-variant/50 cursor-pointer"
-          title="Recenter Winneba Network"
-        >
-          <span className="material-symbols-outlined text-[20px] fill">my_location</span>
-        </button>
-
-        {/* Dynamic Layer Transparency Pill */}
-        <div className="bg-surface/90 backdrop-blur-md rounded-xl shadow-md p-2.5 flex flex-col gap-1 border border-outline-variant/50 w-36">
-          <div className="flex justify-between items-center text-[10px] font-bold uppercase font-label-caps text-outline">
-            <span>Overlay Opacity</span>
-            <span className="font-data-mono text-primary font-bold">{layerOpacity}%</span>
-          </div>
-          <input
-            type="range"
-            min="20"
-            max="100"
-            value={layerOpacity}
-            onChange={(e) => setLayerOpacity(Number(e.target.value))}
-            className="w-full accent-primary cursor-pointer h-1.5 bg-surface-container-highest rounded-lg"
-            title="Adjust GIS Layer Transparency"
-          />
-        </div>
-      </div>
-
-      {/* Map Legend (Bottom Left) */}
-      <div className="absolute bottom-6 left-6 z-20 bg-surface/90 backdrop-blur-md rounded-2xl shadow-lg p-5 flex flex-col gap-3 min-w-[250px] border border-outline-variant/60">
-        <div className="flex items-center justify-between">
-          <span className="font-title-md text-on-surface text-[15px] font-bold">Network Status</span>
-          <span className="material-symbols-outlined text-outline-subtle text-[18px]">info</span>
-        </div>
-        <div className="flex flex-col gap-2.5">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-risk-healthy shadow-[0_0_8px_rgba(123,201,111,0.6)]"></div>
-            <span className="font-body-md text-on-surface-variant text-[13px]">Healthy (Clear)</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(255,177,0,0.6)]"></div>
-            <span className="font-body-md text-on-surface-variant text-[13px]">Moderate (Silt buildup)</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-risk-high shadow-[0_0_8px_rgba(255,140,0,0.6)]"></div>
-            <span className="font-body-md text-on-surface-variant text-[13px]">High Risk (Partial Block)</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-risk-critical animate-pulse shadow-[0_0_12px_rgba(186,26,26,0.8)]"></div>
-            <span className="font-body-md text-on-surface font-semibold text-[13px]">Critical (Imminent Flood)</span>
-          </div>
-        </div>
-        <div className="mt-1 pt-3 border-t border-outline-variant/30 flex items-center justify-between">
-          <span className="font-label-caps text-outline uppercase tracking-wider text-[10px]">Active GIS Layers</span>
-          <span className="font-data-mono text-primary font-bold text-[12px]">3/5</span>
-        </div>
+      {/* Real OpenStreetMap GIS Canvas centered at Winneba (5.34352, -0.62566) */}
+      <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
+        <OpenStreetMapViewer
+          drainageSegments={drainageSegments}
+          selectedSegmentId={selectedNodeId}
+          onSelectSegment={handleSelectNode}
+          className="w-full h-full"
+          viewMode="digital-twin"
+        />
       </div>
 
       {/* Toggle Button to reopen side panel if closed */}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import OpenStreetMapViewer from '../map/OpenStreetMapViewer';
 
 export default function FloodRiskView({ onInspectInfrastructure, onOpenDispatch }) {
   const [activeChartOverlay, setActiveChartOverlay] = useState('rainfall'); // 'risk' or 'rainfall'
@@ -189,77 +190,14 @@ export default function FloodRiskView({ onInspectInfrastructure, onOpenDispatch 
               </div>
             </div>
 
-            {/* Map Container */}
-            <div className="w-full h-[420px] rounded-xl overflow-hidden relative shadow-inner border border-outline-variant/50">
-              <div
-                className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform duration-300 origin-center"
-                data-location="Winneba, Ghana"
-                style={{
-                  transform: `scale(${zoomLevel})`,
-                  backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlMvKcDFINtmI0OSEES1xmfAGaL9-VepkWY5HWmsSO1tzrFKaRzJOOimoUsydgqEJRM5A_lR_cz05vHwhgenP-4NNA19XdqcE4kelRWGo2SW99hq1LkW4B54p4N6X3WkVPWF9bok96PZ1oSX7jQkZi6nPR9VJdcK7cJ8lBFDAlUWMNY1R-cSwZ8zoXmCISzx31iHZOAFNqtra3ucpSEH5mAf0mMDdSWdcMjYIp5Q4CAfzotOq0SdrNNA')`,
-                }}
-              ></div>
-
-              {/* Dynamic Heatmap Overlay Simulation */}
-              {activeLayer && (
-                <div
-                  className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-65 transition-opacity duration-300"
-                  style={{
-                    background:
-                      forecastHorizon === '48H'
-                        ? 'radial-gradient(circle at 60% 40%, rgba(186, 26, 26, 0.9) 0%, rgba(255, 140, 0, 0.6) 40%, transparent 80%), radial-gradient(circle at 30% 70%, rgba(186, 26, 26, 0.85) 0%, rgba(255, 140, 0, 0.4) 50%, transparent 85%)'
-                        : 'radial-gradient(circle at 60% 40%, rgba(255, 140, 0, 0.8) 0%, rgba(255, 177, 0, 0.4) 30%, transparent 70%), radial-gradient(circle at 30% 70%, rgba(186, 26, 26, 0.7) 0%, rgba(255, 140, 0, 0.3) 40%, transparent 80%)',
-                  }}
-                ></div>
-              )}
-
-              {/* Pin markers for High Alert Areas */}
-              <div className="absolute top-1/3 left-1/3 z-20 group cursor-pointer">
-                <div className="w-8 h-8 rounded-full bg-risk-critical text-white flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
-                  <span className="material-symbols-outlined text-[16px]">warning</span>
-                </div>
-                <div className="absolute top-9 left-1/2 -translate-x-1/2 bg-surface-container-lowest/90 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold border border-outline-variant shadow-md whitespace-nowrap">
-                  North Basin (92% Risk)
-                </div>
-              </div>
-
-              <div className="absolute bottom-1/4 right-1/3 z-20 group cursor-pointer">
-                <div className="w-8 h-8 rounded-full bg-risk-high text-white flex items-center justify-center shadow-lg border-2 border-white">
-                  <span className="material-symbols-outlined text-[16px]">priority_high</span>
-                </div>
-                <div className="absolute top-9 left-1/2 -translate-x-1/2 bg-surface-container-lowest/90 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold border border-outline-variant shadow-md whitespace-nowrap">
-                  Coastal Outfall (85% Risk)
-                </div>
-              </div>
-
-              {/* Map Floating Controls */}
-              <div className="absolute right-4 bottom-4 flex flex-col gap-2 z-20">
-                <button
-                  onClick={() => setZoomLevel((z) => Math.min(z + 0.2, 1.8))}
-                  title="Zoom in"
-                  className="w-9 h-9 bg-surface-container-lowest/95 backdrop-blur-md rounded-lg shadow-md flex items-center justify-center hover:bg-surface-container transition-colors border border-outline-variant/60"
-                >
-                  <span className="material-symbols-outlined text-[18px] text-on-surface">add</span>
-                </button>
-                <button
-                  onClick={() => setZoomLevel((z) => Math.max(z - 0.2, 0.8))}
-                  title="Zoom out"
-                  className="w-9 h-9 bg-surface-container-lowest/95 backdrop-blur-md rounded-lg shadow-md flex items-center justify-center hover:bg-surface-container transition-colors border border-outline-variant/60"
-                >
-                  <span className="material-symbols-outlined text-[18px] text-on-surface">remove</span>
-                </button>
-                <button
-                  onClick={() => setActiveLayer(!activeLayer)}
-                  title="Toggle Heatmap Layer"
-                  className={`w-9 h-9 rounded-lg shadow-md flex items-center justify-center transition-colors mt-1 border border-outline-variant/60 ${
-                    activeLayer
-                      ? 'bg-primary text-on-primary'
-                      : 'bg-surface-container-lowest/95 text-on-surface'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">layers</span>
-                </button>
-              </div>
+            {/* Real OpenStreetMap Inundation Risk Canvas */}
+            <div className="w-full h-[440px] rounded-xl overflow-hidden relative shadow-inner border border-outline-variant/50">
+              <OpenStreetMapViewer
+                showHeatmap={true}
+                forecastHorizon={forecastHorizon}
+                className="w-full h-full"
+                viewMode="flood-risk"
+              />
             </div>
           </div>
         </div>
