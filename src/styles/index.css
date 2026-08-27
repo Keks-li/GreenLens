@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface-container-high: #eae8e7;
+  --color-inverse-primary: #8ad97d;
+  --color-on-surface: #1b1c1c;
+  --color-primary-container: #7bc96f;
+  --color-outline: #707a6b;
+  --color-outline-subtle: #889383;
+  --color-tertiary: #586158;
+  --color-background: #fbf9f8;
+  --color-surface-tint: #206d1f;
+  --color-outline-variant: #c0cab9;
+  --color-surface-container-low: #f5f3f3;
+  --color-surface-container-highest: #e4e2e2;
+  --color-on-tertiary-fixed: #161d16;
+  --color-primary-fixed-dim: #8ad97d;
+  --color-inverse-surface: #303030;
+  --color-tertiary-fixed: #dce5d9;
+  --color-on-primary-fixed: #002201;
+  --color-on-secondary-fixed: #002114;
+  --color-primary: #206d1f;
+  --color-inverse-on-surface: #f2f0f0;
+  --color-tertiary-fixed-dim: #c0c9be;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-secondary-container: #beead1;
+  --color-primary-fixed: #a5f697;
+  --color-surface-variant: #e4e2e2;
+  --color-on-surface-variant: #40493d;
+  --color-on-primary-fixed-variant: #005308;
+  --color-on-background: #1b1c1c;
+  --color-on-secondary-fixed-variant: #274e3d;
+  --color-surface-dim: #dbd9d9;
+  --color-on-error-container: #93000a;
+  --color-on-secondary: #ffffff;
+  --color-on-tertiary-container: #414a41;
+  --color-on-secondary-container: #436b58;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container: #efeded;
+  --color-surface-bright: #fbf9f8;
+  --color-tertiary-container: #b0b9ae;
+  --color-secondary: #3f6653;
+  --color-error: #ba1a1a;
+  --color-surface: #fbf9f8;
+  --color-secondary-fixed: #c1ecd4;
+  --color-on-primary-container: #005408;
+  --color-on-tertiary-fixed-variant: #404040;
+  --color-secondary-fixed-dim: #a5d0b9;
+  --color-on-primary: #ffffff;
+  --color-on-tertiary: #ffffff;
+  --color-risk-critical: #ba1a1a;
+  --color-risk-high: #e65100;
+  --color-risk-moderate: #f59e0b;
+  --color-risk-healthy: #206d1f;
+
+  --font-body-sm: 'Plus Jakarta Sans', sans-serif;
+  --font-headline-lg: 'Plus Jakarta Sans', sans-serif;
+  --font-body-lg: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-label-caps: 'Plus Jakarta Sans', sans-serif;
+  --font-title-md: 'Plus Jakarta Sans', sans-serif;
+  --font-title-lg: 'Plus Jakarta Sans', sans-serif;
+  --font-data-mono: 'JetBrains Mono', monospace;
+}
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+  body {
+    overscroll-behavior: none;
+    background-color: #fbf9f8;
+    color: #1b1c1c;
+  }
+  main > :first-child {
+    margin-top: 0 !important;
+  }
+  main > :last-child {
+    margin-bottom: 0 !important;
+  }
+}
+
+/* Custom typography classes matching design spec */
+.font-display-lg {
+  font-size: 32px;
+  line-height: 36px;
+  letter-spacing: -0.5px;
+  font-weight: 700;
+}
+
+.font-display {
+  font-size: 40px;
+  line-height: 48px;
+  letter-spacing: -1px;
+  font-weight: 800;
+}
+
+.font-headline-lg {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+}
+
+.font-headline-lg-mobile {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+}
+
+.font-title-lg {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+}
+
+.font-title-md {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+.font-body-lg {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.font-body-md {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+.font-body-sm {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+.font-label-caps {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+.font-data-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c0cab9;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #707a6b;
+}
+
+/* Material Symbols styling */
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  vertical-align: middle;
+  user-select: none;
+  display: inline-block;
+  line-height: 1;
+}
+
+.material-symbols-outlined.fill {
+  font-variation-settings: 'FILL' 1;
+}
