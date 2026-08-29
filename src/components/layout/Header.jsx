@@ -8,10 +8,17 @@ export default function Header({
   searchQuery,
   setSearchQuery,
   weatherData,
-  onOpenNotifications,
+  incidents = [],
+  unreadCount = 0,
+  onSelectIncident,
+  onLocateOnMap,
+  onClearUnread,
+  onNavigateView,
   onOpenHelp
 }) {
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const [notificationFilter, setNotificationFilter] = useState('all'); // 'all', 'citizen', 'critical'
+  const [showWeatherPopover, setShowWeatherPopover] = useState(false);
 
   const weather = weatherData || { temp: '--', condition: 'Telemetry Active' };
   const munisList = municipalities || [];
@@ -35,7 +42,20 @@ export default function Header({
     }
   };
 
-  const [showWeatherPopover, setShowWeatherPopover] = useState(false);
+  // Filter recent upload activities
+  const recentActivities = (incidents || []).filter((inc) => {
+    if (notificationFilter === 'citizen') return inc.sourceTable === 'reports' || inc.reportedBy?.includes('Citizen') || inc.id?.startsWith('REP');
+    if (notificationFilter === 'critical') return inc.severity === 'critical' || inc.severity === 'high';
+    return true;
+  }).slice(0, 8);
+
+  const handleToggleNotifications = () => {
+    const nextState = !showNotificationsMenu;
+    setShowNotificationsMenu(nextState);
+    if (nextState && onClearUnread) {
+      onClearUnread();
+    }
+  };
 
   return (
     <header className="fixed top-0 left-72 right-0 h-16 bg-surface/85 backdrop-blur-md border-b border-outline-variant z-40 flex items-center justify-between px-8 select-none">
@@ -59,7 +79,10 @@ export default function Header({
         <div className="h-4 w-[1px] bg-outline-variant"></div>
 
         <nav className="flex items-center gap-2 text-on-surface-variant text-body-sm">
-          <span className="hover:text-primary transition-colors cursor-pointer capitalize">
+          <span
+            onClick={() => onNavigateView && onNavigateView('dashboard')}
+            className="hover:text-primary transition-colors cursor-pointer capitalize"
+          >
             {currentView === 'dashboard' ? 'Dashboard' : 'Operations'}
           </span>
           <span className="material-symbols-outlined text-[16px] text-outline">chevron_right</span>
@@ -67,7 +90,7 @@ export default function Header({
         </nav>
       </div>
 
-      {/* Right side: Search, Telemetry Weather, AI status, Actions */}
+      {/* Right side: Search, Telemetry Weather, AI status, Notifications */}
       <div className="flex items-center gap-4">
         {/* Search */}
         <div className="relative flex items-center">
@@ -82,7 +105,7 @@ export default function Header({
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 text-outline hover:text-on-surface"
+              className="absolute right-2.5 text-outline hover:text-on-surface cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px]">close</span>
             </button>
@@ -150,39 +173,181 @@ export default function Header({
           <span className="text-[10px] font-bold text-primary uppercase tracking-wider hidden sm:inline">AI Active</span>
         </div>
 
-        {/* Notifications & Help */}
+        {/* Notifications Dropdown Drawer */}
         <div className="flex items-center gap-3 relative">
           <button
-            onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
-            title="Active Notifications"
-            className="relative p-1.5 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors"
+            onClick={handleToggleNotifications}
+            title="Recent Incident & Upload Activities"
+            className="relative p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[22px]">notifications</span>
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-risk-critical rounded-full ring-2 ring-background"></span>
+            {unreadCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-risk-critical text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse shadow-xs">
+                {unreadCount}
+              </span>
+            )}
           </button>
 
-          {/* Quick Notification Dropdown */}
+          {/* Detailed Notification & Recent Activities Drawer */}
           {showNotificationsMenu && (
-            <div className="absolute right-0 top-10 w-80 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant p-4 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="flex items-center justify-between pb-2 border-b border-outline-variant mb-3">
-                <span className="font-title-md text-[14px] text-on-surface font-bold">System Alerts</span>
-                <span className="text-[10px] text-primary font-bold uppercase">Live Telemetry</span>
+            <div className="absolute right-0 top-12 w-96 max-w-[90vw] bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant z-50 animate-in fade-in slide-in-from-top-2 overflow-hidden flex flex-col max-h-[85vh]">
+              {/* Drawer Header */}
+              <div className="p-4 border-b border-outline-variant/60 bg-surface-container-low/60 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-[20px]">feed</span>
+                  <div>
+                    <h3 className="font-title-md text-[14px] text-on-surface font-bold">Incident Activities &amp; Uploads</h3>
+                    <p className="text-[11px] text-on-surface-variant">Live feed of citizen mobile scans and sensor alerts</p>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full font-data-mono">
+                  Live
+                </span>
               </div>
-              <div className="space-y-2.5 text-body-sm">
-                <div className="p-2 rounded-lg bg-error-container/40 border border-error/20 flex gap-2">
-                  <span className="material-symbols-outlined text-risk-critical text-[18px] mt-0.5">warning</span>
-                  <div>
-                    <div className="font-semibold text-on-error-container text-[12px]">Drain D-102 High Blockage (80%)</div>
-                    <div className="text-[11px] text-on-surface-variant">Immediate clearance suggested prior to 18h storm.</div>
+
+              {/* Filter Tabs */}
+              <div className="flex px-3 pt-2.5 border-b border-outline-variant/40 gap-2 bg-surface-container-low/30 text-[11px]">
+                {[
+                  { id: 'all', label: 'All Activities', count: incidents.length },
+                  { id: 'citizen', label: 'Citizen Scans', count: incidents.filter(i => i.id?.startsWith('REP')).length },
+                  { id: 'critical', label: 'High / Critical', count: incidents.filter(i => i.severity === 'critical' || i.severity === 'high').length }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setNotificationFilter(tab.id)}
+                    className={`pb-2 px-2 font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                      notificationFilter === tab.id
+                        ? 'text-primary border-b-2 border-primary font-bold'
+                        : 'text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className="text-[10px] opacity-75 font-data-mono">({tab.count})</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Activities List */}
+              <div className="overflow-y-auto divide-y divide-outline-variant/30 p-2 space-y-1">
+                {recentActivities.length === 0 ? (
+                  <div className="p-6 text-center text-on-surface-variant text-[12px]">
+                    <span className="material-symbols-outlined text-outline text-[32px] block mb-1">inbox</span>
+                    No incident activities found for this filter.
                   </div>
-                </div>
-                <div className="p-2 rounded-lg bg-primary/5 border border-primary/20 flex gap-2">
-                  <span className="material-symbols-outlined text-primary text-[18px] mt-0.5">check_circle</span>
-                  <div>
-                    <div className="font-semibold text-on-surface text-[12px]">Rapid Unit 3 Cleanup Completed</div>
-                    <div className="text-[11px] text-on-surface-variant">Lowtown Conduit restored to 100% capacity.</div>
-                  </div>
-                </div>
+                ) : (
+                  recentActivities.map((item) => {
+                    const isCritical = item.severity === 'critical';
+                    const isHigh = item.severity === 'high';
+                    const isCitizenScan = item.id?.startsWith('REP');
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-2.5 rounded-xl hover:bg-surface-container-low transition-all flex items-start gap-3 group relative cursor-pointer"
+                        onClick={() => {
+                          setShowNotificationsMenu(false);
+                          if (onSelectIncident) onSelectIncident(item);
+                        }}
+                      >
+                        {/* Thumbnail / Status icon */}
+                        <div className="relative shrink-0 mt-0.5">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.title}
+                              className="w-11 h-11 rounded-lg object-cover border border-outline-variant/40"
+                            />
+                          ) : (
+                            <div className={`w-11 h-11 rounded-lg flex items-center justify-center ${
+                              isCritical ? 'bg-error-container text-risk-critical' : 'bg-primary/10 text-primary'
+                            }`}>
+                              <span className="material-symbols-outlined text-[20px]">
+                                {isCritical ? 'warning' : 'report'}
+                              </span>
+                            </div>
+                          )}
+                          {isCitizenScan && (
+                            <span
+                              title="Citizen Mobile Upload"
+                              className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary text-on-primary rounded-full flex items-center justify-center text-[9px] shadow-xs"
+                            >
+                              📱
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <h4 className="font-title-sm text-[13px] font-bold text-on-surface truncate group-hover:text-primary transition-colors">
+                              {item.title}
+                            </h4>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase shrink-0 ${
+                              isCritical ? 'bg-error-container text-risk-critical' : isHigh ? 'bg-amber-100 text-amber-900' : 'bg-surface-container text-outline'
+                            }`}>
+                              {item.severity}
+                            </span>
+                          </div>
+
+                          {/* Refuse Material Tag & Category */}
+                          <div className="flex items-center gap-1.5 flex-wrap my-1">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                              🗑️ {item.refuseType || item.category || 'Refuse Debris'}
+                            </span>
+                            {item.estimatedWasteVolume && (
+                              <span className="text-[10px] font-data-mono text-outline font-semibold">
+                                {item.estimatedWasteVolume}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-on-surface-variant mt-1">
+                            <span className="truncate">
+                              By <strong className="text-on-surface">{item.reportedBy}</strong> • {item.reportedAt || 'Recent'}
+                            </span>
+
+                            {/* Direct Map Locate Icon Button */}
+                            <button
+                              type="button"
+                              title="Locate on Exact Incident Map"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowNotificationsMenu(false);
+                                if (onLocateOnMap) onLocateOnMap(item);
+                              }}
+                              className="p-1 rounded-lg bg-surface-container hover:bg-primary hover:text-on-primary text-primary transition-all flex items-center gap-1 text-[10px] font-bold px-2 cursor-pointer border border-outline-variant/40"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">explore</span>
+                              <span>Map</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-3 bg-surface-container-low/60 border-t border-outline-variant/60 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNotificationsMenu(false);
+                    if (onNavigateView) onNavigateView('incidents');
+                  }}
+                  className="text-primary hover:underline text-[12px] font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <span>View All Reports &amp; Incidents</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNotificationsMenu(false)}
+                  className="text-[11px] text-outline hover:text-on-surface cursor-pointer"
+                >
+                  Close
+                </button>
               </div>
             </div>
           )}
@@ -190,7 +355,7 @@ export default function Header({
           <button
             onClick={onOpenHelp}
             title="System Documentation & Guide"
-            className="p-1.5 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors"
+            className="p-1.5 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[22px]">help</span>
           </button>

@@ -7,9 +7,12 @@ import AIPriorityList from '../dashboard/AIPriorityList';
 export default function DashboardView({
   kpis,
   drainageSegments,
+  incidents = [],
+  focusedLocation = null,
   priorityActions,
   selectedMunicipality,
   onSelectSegment,
+  onSelectIncident,
   selectedSegmentId,
   onDispatchAction,
   onViewDetailsAction,
@@ -45,7 +48,10 @@ export default function DashboardView({
           {/* Left: Interactive Map (8 cols) */}
           <LiveTelemetryMap
             drainageSegments={drainageSegments}
+            incidents={incidents}
+            focusedLocation={focusedLocation}
             onSelectSegment={onSelectSegment}
+            onSelectIncident={onSelectIncident}
             selectedSegmentId={selectedSegmentId}
           />
 

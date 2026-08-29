@@ -77,6 +77,104 @@ const mapIncident = (row) => {
   };
 };
 
+const mapReportToIncident = (report) => {
+  if (!report) return null;
+  const media = Array.isArray(report.report_media) ? report.report_media[0] : report.report_media;
+  const aiRisk = Array.isArray(report.ai_risk_assessments) ? report.ai_risk_assessments[0] : report.ai_risk_assessments;
+  const category = report.report_categories?.name || report.category_name || report.category || 'Environmental Report';
+  const reporter = report.users
+    ? `${report.users.first_name || ''} ${report.users.last_name || ''}`.trim() || report.users.email || 'Citizen Reporter'
+    : 'Citizen Reporter';
+
+  const riskLevel = aiRisk?.risk_level?.toLowerCase() || 'moderate';
+  let uiStatus = 'unresolved';
+  if (report.status === 'RESOLVED' || report.status === 'CLOSED') {
+    uiStatus = 'resolved';
+  } else if (report.status === 'ACCEPTED' || report.status === 'CONVERTED_TO_INCIDENT') {
+    uiStatus = 'in-progress';
+  } else if (report.status === 'UNDER_REVIEW' || report.status === 'AI_ANALYZING') {
+    uiStatus = 'assigned';
+  } else {
+    uiStatus = 'unresolved';
+  }
+
+  const lat = Number(report.latitude || 5.3556);
+  const lng = Number(report.longitude || -0.6247);
+  const coords = `${lat.toFixed(4)}° N, ${Math.abs(lng).toFixed(4)}° W`;
+
+  const rawDate = report.reported_at || report.created_at;
+  let formattedTime = 'Today';
+  if (rawDate) {
+    try {
+      const d = new Date(rawDate);
+      formattedTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + d.toLocaleDateString();
+    } catch {
+      formattedTime = 'Recent';
+    }
+  }
+
+  const defaultImage = 'https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?auto=format&fit=crop&w=800&q=80';
+  const imageUrl = media?.file_url || media?.thumbnail_url || report.image_url || defaultImage;
+
+  let title = report.title;
+  if (!title || title === 'AI Auto-Generated Report' || title === 'Citizen Report') {
+    title = `${category} at ${report.address || (coords ? `Winneba (${coords})` : 'Winneba Catchment')}`;
+  }
+
+  let refuseType = 'Plastics & Polymers (PET / Sachet Bags)';
+  const descLower = ((report.description || '') + ' ' + (aiRisk?.reasoning || '')).toLowerCase();
+  const catLower = category.toLowerCase();
+  if (descLower.includes('plastic') || descLower.includes('bottle') || descLower.includes('sachet') || catLower.includes('plastic')) {
+    refuseType = 'Plastics & Polymers (PET / Sachet Bags)';
+  } else if (descLower.includes('silt') || descLower.includes('sand') || descLower.includes('sediment') || descLower.includes('mud') || catLower.includes('silt')) {
+    refuseType = 'Silt & Excavation Sediment';
+  } else if (descLower.includes('organic') || descLower.includes('food') || descLower.includes('market') || descLower.includes('fish')) {
+    refuseType = 'Organic & Market Waste';
+  } else if (descLower.includes('chemical') || descLower.includes('sewage') || descLower.includes('oil')) {
+    refuseType = 'Hazardous Surcharging Effluent';
+  } else if (catLower.includes('dump') || catLower.includes('overflow')) {
+    refuseType = 'Solid Municipal Refuse';
+  } else if (catLower.includes('damage') || descLower.includes('concrete')) {
+    refuseType = 'Structural Masonry Debris';
+  } else {
+    refuseType = 'Mixed Channel Refuse';
+  }
+
+  return {
+    ...report,
+    id: `REP-${String(report.id).padStart(3, '0')}`,
+    rawId: report.id,
+    sourceTable: 'reports',
+    title,
+    drainId: report.drain_id ? `Drain ${report.drain_id}` : 'Catchment Swale',
+    municipalityId: report.municipality_id || 'winneba',
+    sector: report.address || 'Winneba Central Catchment',
+    category,
+    refuseType,
+    severity: riskLevel === 'critical' ? 'critical' : riskLevel === 'high' ? 'high' : riskLevel === 'low' ? 'low' : 'moderate',
+    status: uiStatus,
+    rawStatus: report.status,
+    reportedAt: formattedTime,
+    timestamp: rawDate || new Date().toISOString(),
+    reportedBy: reporter,
+    reporterContact: report.users?.phone || report.users?.email || null,
+    aiConfidence: aiRisk?.overall_risk_score ? `${Math.round(Number(aiRisk.overall_risk_score))}% AI Risk Score` : '92% AI Verified',
+    floodRiskScore: Number(aiRisk?.flood_risk_score || 0),
+    wasteRiskScore: Number(aiRisk?.waste_risk_score || 0),
+    overallRiskScore: Number(aiRisk?.overall_risk_score || 0),
+    aiReasoning: aiRisk?.reasoning || 'Automated visual scan identified surface refuse accumulation and runoff impedance.',
+    estimatedWasteVolume: aiRisk?.waste_risk_score ? `${Math.round(Number(aiRisk.waste_risk_score) * 25 + 50)} kg` : '150 kg',
+    coords,
+    latitude: lat,
+    longitude: lng,
+    description: report.description || (aiRisk?.reasoning ? `AI Assessment: ${aiRisk.reasoning}` : 'Visual submission captured via citizen mobile scan.'),
+    imageUrl,
+    mediaList: report.report_media || [],
+    aiRiskAssessment: aiRisk,
+    assignedTeamId: report.assigned_team_id || null
+  };
+};
+
 const mapFieldTeam = (row) => {
   if (!row) return null;
   return {
@@ -260,20 +358,65 @@ export const dataService = {
     return null;
   },
 
-  // Fetch incident feed
+  // Fetch incident feed (combines live citizen/mobile reports and operational incidents)
   async getIncidents(statusFilter = 'all', municipalityId = 'winneba') {
     if (isSupabaseConfigured && supabase) {
       try {
-        let query = supabase.from('incidents').select('*');
+        // 1. Fetch live citizen/mobile reports joined with media, risk assessment, category, and user
+        let reportsQuery = supabase
+          .from('reports')
+          .select(`
+            id,
+            title,
+            description,
+            category_id,
+            status,
+            latitude,
+            longitude,
+            address,
+            reported_at,
+            created_at,
+            updated_at,
+            user_id,
+            report_categories ( id, name, icon ),
+            report_media ( id, file_url, thumbnail_url, media_type ),
+            ai_risk_assessments ( id, flood_risk_score, waste_risk_score, drainage_risk_score, environmental_risk_score, overall_risk_score, risk_level, reasoning ),
+            users ( id, first_name, last_name, email, phone )
+          `)
+          .order('created_at', { ascending: false });
+
         if (municipalityId && municipalityId !== 'all') {
-          query = query.eq('municipality_id', municipalityId);
+          reportsQuery = reportsQuery.eq('municipality_id', municipalityId);
         }
+
+        // 2. Fetch operational command incidents
+        let incidentsQuery = supabase
+          .from('incidents')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (municipalityId && municipalityId !== 'all') {
+          incidentsQuery = incidentsQuery.eq('municipality_id', municipalityId);
+        }
+
+        const [reportsRes, incidentsRes] = await Promise.all([
+          reportsQuery,
+          incidentsQuery
+        ]);
+
+        const mappedReports = (reportsRes.data || []).map(mapReportToIncident).filter(Boolean);
+        const mappedIncidents = (incidentsRes.data || []).map(mapIncident).filter(Boolean);
+
+        let combined = [...mappedReports, ...mappedIncidents];
+
         if (statusFilter && statusFilter !== 'all') {
-          query = query.eq('status', statusFilter);
+          combined = combined.filter(
+            (inc) => inc.status === statusFilter || inc.rawStatus === statusFilter
+          );
         }
-        const { data, error } = await query.order('created_at', { ascending: false });
-        if (!error && data?.length) {
-          return data.map(mapIncident);
+
+        if (combined.length > 0) {
+          return combined;
         }
       } catch (err) {
         console.error('Supabase getIncidents error:', err);
@@ -282,22 +425,77 @@ export const dataService = {
     return [];
   },
 
-  // Update incident status
+  // Update incident status across reports and incidents tables
   async updateIncidentStatus(incidentId, status, assignedTeamId = null) {
     const timestamp = new Date().toISOString();
     if (isSupabaseConfigured && supabase) {
       try {
-        const payload = { status, updated_at: timestamp };
-        if (assignedTeamId) payload.assigned_team_id = assignedTeamId;
-        if (status === 'resolved') payload.resolved_at = timestamp;
+        // If it's a report (e.g. REP-006 or REP-016)
+        if (typeof incidentId === 'string' && incidentId.startsWith('REP-')) {
+          const rawId = parseInt(incidentId.replace('REP-', ''), 10);
+          const dbStatus =
+            status === 'resolved'
+              ? 'RESOLVED'
+              : status === 'in-progress'
+              ? 'ACCEPTED'
+              : status === 'assigned'
+              ? 'UNDER_REVIEW'
+              : 'SUBMITTED';
 
-        const { data, error } = await supabase
-          .from('incidents')
-          .update(payload)
-          .eq('id', incidentId)
-          .select();
+          const { data, error } = await supabase
+            .from('reports')
+            .update({ status: dbStatus, updated_at: timestamp })
+            .eq('id', rawId)
+            .select(`
+              id,
+              title,
+              description,
+              category_id,
+              status,
+              latitude,
+              longitude,
+              address,
+              reported_at,
+              created_at,
+              updated_at,
+              user_id,
+              report_categories ( id, name, icon ),
+              report_media ( id, file_url, thumbnail_url, media_type ),
+              ai_risk_assessments ( id, flood_risk_score, waste_risk_score, drainage_risk_score, environmental_risk_score, overall_risk_score, risk_level, reasoning ),
+              users ( id, first_name, last_name, email, phone )
+            `);
 
-        if (!error && data?.length) return mapIncident(data[0]);
+          if (!error && data?.length) {
+            await this.addAuditLog({
+              user: 'Command Lead (You)',
+              action: 'REPORT_STATUS_UPDATED',
+              entity: `Report ${incidentId}`,
+              details: `Report status updated to ${dbStatus}.`
+            });
+            return mapReportToIncident(data[0]);
+          }
+        } else {
+          // Standard incident table record
+          const payload = { status, updated_at: timestamp };
+          if (assignedTeamId) payload.assigned_team_id = assignedTeamId;
+          if (status === 'resolved') payload.resolved_at = timestamp;
+
+          const { data, error } = await supabase
+            .from('incidents')
+            .update(payload)
+            .eq('id', incidentId)
+            .select();
+
+          if (!error && data?.length) {
+            await this.addAuditLog({
+              user: 'Command Lead (You)',
+              action: 'INCIDENT_STATUS_UPDATED',
+              entity: `Incident ${incidentId}`,
+              details: `Incident marked as ${status}.`
+            });
+            return mapIncident(data[0]);
+          }
+        }
       } catch (err) {
         console.error('Supabase updateIncidentStatus error:', err);
       }
@@ -515,21 +713,45 @@ export const dataService = {
     return { id, timestamp: timestampStr, user, action, entity, details };
   },
 
-  // Fetch Users
+  // Fetch Users (both command staff and citizen mobile app users)
   async getUsers(municipalityId = 'winneba') {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase.from('system_users').select('*').order('created_at', { ascending: false });
-        if (!error && data?.length) {
-          return data.map(u => ({
+        const [sysRes, authRes] = await Promise.all([
+          supabase.from('system_users').select('*').order('created_at', { ascending: false }),
+          supabase.from('users').select('*').order('created_at', { ascending: false })
+        ]);
+
+        const systemUsers = (sysRes.data || []).map(u => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone || '+233 24 555 0192',
+          role: u.role,
+          department: u.department,
+          status: u.status || 'Active',
+          municipalityId: u.municipality_id || 'winneba'
+        }));
+
+        const citizenAuthUsers = (authRes.data || []).map(u => {
+          const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email?.split('@')[0] || 'Registered User';
+          return {
             id: u.id,
-            name: u.name,
+            name: fullName,
             email: u.email,
-            role: u.role,
-            department: u.department,
-            status: u.status || 'Active'
-          }));
-        }
+            phone: u.phone || '+233 55 000 0000',
+            role: 'Citizen Champion',
+            department: 'Citizen Mobile Watch',
+            status: u.status === 'ACTIVE' ? 'Active' : u.status === 'PENDING_VERIFICATION' ? 'Pending' : 'Active',
+            municipalityId: u.municipality_id || 'winneba'
+          };
+        });
+
+        const existingEmails = new Set(systemUsers.map(u => u.email?.toLowerCase()));
+        const uniqueCitizenUsers = citizenAuthUsers.filter(u => u.email && !existingEmails.has(u.email.toLowerCase()));
+
+        const allUsers = [...systemUsers, ...uniqueCitizenUsers];
+        if (allUsers.length > 0) return allUsers;
       } catch (err) {
         console.error('Supabase getUsers error:', err);
       }
@@ -753,8 +975,12 @@ export const dataService = {
     return [];
   },
 
-  // Disburse / Redeem Citizen Eco-Reward
-  async redeemCitizenReward(citizenId, amountGhs = 50.00) {
+  // Disburse / Redeem Citizen Data & Airtime Reward Package
+  async redeemCitizenReward(citizenId, packageItem = null) {
+    const packageName = packageItem?.name || (typeof packageItem === 'string' ? packageItem : '1 GB Data Package');
+    const ghsValue = Number(packageItem?.ghsValue || (packageItem?.points_required ? packageItem.points_required / 100 : 25));
+    const pointsDeducted = Number(packageItem?.points_required || 0);
+
     if (isSupabaseConfigured && supabase) {
       try {
         const { data: current, error: fetchErr } = await supabase
@@ -764,18 +990,32 @@ export const dataService = {
           .single();
 
         if (!fetchErr && current) {
-          const updatedRedeemed = Number(current.rewards_redeemed_ghs || 0) + Number(amountGhs);
+          const updatedRedeemed = Number(current.rewards_redeemed_ghs || 0) + ghsValue;
+          const updatedPoints = Math.max(0, Number(current.reward_points || 0) - pointsDeducted);
+
           const { data, error } = await supabase
             .from('citizen_rewards')
-            .update({ rewards_redeemed_ghs: updatedRedeemed })
+            .update({
+              rewards_redeemed_ghs: updatedRedeemed,
+              reward_points: pointsDeducted > 0 ? updatedPoints : current.reward_points
+            })
             .eq('id', citizenId)
             .select();
 
+          // Decrement package stock in reward_catalog if package matched
+          if (packageItem?.id) {
+            await supabase.rpc('decrement_reward_stock', { p_id: packageItem.id }).catch(() => {
+              supabase.from('reward_catalog')
+                .update({ quantity_available: Math.max(0, (packageItem.quantity_available || 1) - 1) })
+                .eq('id', packageItem.id);
+            });
+          }
+
           if (!error && data?.length) {
             await this.addAuditLog({
-              action: 'ECO_REWARD_DISBURSED',
+              action: 'DATA_AIRTIME_DISBURSED',
               entity: `Citizen ${current.user_name}`,
-              details: `Disbursed GHS ${amountGhs.toFixed(2)} eco-reward for refuse cleanup & flood prevention impact.`
+              details: `Disbursed ${packageName} to phone ${current.phone} (Impact value: GHS ${ghsValue.toFixed(2)}).`
             });
             return data[0];
           }
@@ -785,6 +1025,66 @@ export const dataService = {
       }
     }
     return null;
+  },
+
+  // Fetch Report Categories
+  async getReportCategories() {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('report_categories').select('*').order('id');
+        if (!error && data?.length) {
+          return data;
+        }
+      } catch (err) {
+        console.error('Supabase getReportCategories error:', err);
+      }
+    }
+    return [];
+  },
+
+  // Fetch Waste Types Intelligence
+  async getWasteTypes() {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('waste_types').select('*').order('id');
+        if (!error && data?.length) {
+          return data;
+        }
+      } catch (err) {
+        console.error('Supabase getWasteTypes error:', err);
+      }
+    }
+    return [];
+  },
+
+  // Fetch Eco-Reward Catalog
+  async getRewardCatalog() {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('reward_catalog').select('*').order('points_required');
+        if (!error && data?.length) {
+          return data;
+        }
+      } catch (err) {
+        console.error('Supabase getRewardCatalog error:', err);
+      }
+    }
+    return [];
+  },
+
+  // Fetch Achievement Badges
+  async getBadges() {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('badges').select('*').order('id');
+        if (!error && data?.length) {
+          return data;
+        }
+      } catch (err) {
+        console.error('Supabase getBadges error:', err);
+      }
+    }
+    return [];
   },
 
   // Update blockage simulation
@@ -798,5 +1098,66 @@ export const dataService = {
       simulatedRiskLevel: calculatedRisk >= 85 ? 'critical' : calculatedRisk >= 65 ? 'high' : calculatedRisk >= 40 ? 'moderate' : 'healthy',
       overflowProbability: `${Math.min(99, Math.round(calculatedRisk * 1.05))}%`,
     };
+  },
+
+  // Subscribe to real-time report uploads from citizens & sensors
+  subscribeToReports(onNewReport, onUpdateReport) {
+    if (!isSupabaseConfigured || !supabase) return () => {};
+
+    try {
+      const channel = supabase
+        .channel('reports-realtime-admin')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'reports' },
+          async (payload) => {
+            console.log('Realtime new report payload:', payload);
+            if (onNewReport && payload.new) {
+              try {
+                const { data } = await supabase
+                  .from('reports')
+                  .select(`
+                    id,
+                    title,
+                    description,
+                    status,
+                    created_at,
+                    latitude,
+                    longitude,
+                    address,
+                    report_categories ( name ),
+                    report_media ( media_url ),
+                    ai_risk_assessments ( risk_level, flood_risk_score, waste_risk_score, reasoning ),
+                    users ( first_name, last_name, phone, email )
+                  `)
+                  .eq('id', payload.new.id)
+                  .single();
+
+                const mapped = data ? mapReportToIncident(data) : payload.new;
+                onNewReport(mapped);
+              } catch {
+                onNewReport(payload.new);
+              }
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'reports' },
+          (payload) => {
+            if (onUpdateReport && payload.new) {
+              onUpdateReport(payload.new);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (err) {
+      console.warn('Realtime subscription unavailable:', err);
+      return () => {};
+    }
   }
 };

@@ -3,18 +3,21 @@ import { dataService } from '../../lib/supabase';
 
 export default function IncidentsView({
   incidents: initialIncidents = [],
+  categories = [],
   onSelectIncident,
   onOpenDispatch,
-  onUpdateStatus
+  onUpdateStatus,
+  onLocateOnMap
 }) {
   const [incidentsList, setIncidentsList] = useState(initialIncidents);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSeverity, setFilterSeverity] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState(null);
   const [showNewIncidentModal, setShowNewIncidentModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState('Blocked Drain');
+  const [newCategory, setNewCategory] = useState(categories[0]?.name || 'Blocked Drain');
   const [newSeverity, setNewSeverity] = useState('high');
   const [newSector, setNewSector] = useState('Central Market Sector');
   const [newDesc, setNewDesc] = useState('');
@@ -63,11 +66,13 @@ export default function IncidentsView({
   const filtered = (incidentsList || []).filter((inc) => {
     if (filterStatus !== 'all' && inc.status !== filterStatus) return false;
     if (filterSeverity !== 'all' && inc.severity !== filterSeverity) return false;
+    if (filterCategory !== 'all' && inc.category !== filterCategory) return false;
     if (
       searchQuery &&
-      !inc.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !inc.id.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !inc.sector.toLowerCase().includes(searchQuery.toLowerCase())
+      !inc.title?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !inc.id?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !inc.sector?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !inc.category?.toLowerCase().includes(searchQuery.toLowerCase())
     ) {
       return false;
     }
@@ -82,8 +87,10 @@ export default function IncidentsView({
         return 'bg-risk-high/15 text-risk-high border border-risk-high/30';
       case 'moderate':
         return 'bg-amber-100 text-amber-800 border border-amber-300';
-      default:
+      case 'low':
         return 'bg-secondary-container text-on-secondary-container border border-secondary/30';
+      default:
+        return 'bg-surface-container-high text-on-surface border border-outline-variant';
     }
   };
 
@@ -115,10 +122,10 @@ export default function IncidentsView({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="material-symbols-outlined text-primary text-[24px]">report_problem</span>
-            <h1 className="font-headline-lg text-on-surface">Real-Time Incident Monitoring</h1>
+            <h1 className="font-headline-lg text-on-surface">Real-Time Incident &amp; Report Monitoring</h1>
           </div>
           <p className="font-body-md text-on-surface-variant">
-            Live Supabase feed of citizen reports, verified drainage obstructions, and AI waste detections.
+            Live Supabase feed of verified citizen scans ({incidentsList.filter(i => i.sourceTable === 'reports').length} Mobile/Citizen), drainage obstructions, and AI waste detections.
           </p>
         </div>
 
@@ -140,7 +147,7 @@ export default function IncidentsView({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search incident ID, sector, keywords..."
+            placeholder="Search report ID, sector, keywords..."
             className="w-full bg-surface-container-low border border-outline-variant rounded-xl pl-9 pr-4 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:outline-none"
           />
         </div>
@@ -163,6 +170,22 @@ export default function IncidentsView({
               </button>
             ))}
           </div>
+
+          {/* Category Filter */}
+          {categories?.length > 0 && (
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-body-sm text-on-surface font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Severity Filter */}
           <select
@@ -189,26 +212,32 @@ export default function IncidentsView({
           >
             <div>
               {/* Photo Banner with Transparent Tags */}
-              <div className="relative h-40 bg-surface-container overflow-hidden">
+              <div className="relative h-44 bg-surface-container overflow-hidden">
                 <img
                   src={inc.imageUrl || 'https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?auto=format&fit=crop&w=800&q=80'}
                   alt={inc.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+                <div className="absolute inset-0 bg-black/25 pointer-events-none"></div>
 
-                <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap max-w-[85%]">
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase font-data-mono ${getSeverityBadge(inc.severity)}`}>
                     {inc.severity}
                   </span>
                   <span className="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-white/20 font-data-mono">
                     {inc.category}
                   </span>
+                  {inc.sourceTable === 'reports' && (
+                    <span className="bg-primary/90 text-on-primary text-[9px] font-bold px-2 py-0.5 rounded-full font-label-caps flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[11px]">smartphone</span>
+                      Citizen Scan
+                    </span>
+                  )}
                 </div>
 
-                <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-white text-[11px] flex justify-between items-center border border-white/10">
+                <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-black/75 backdrop-blur-md px-2.5 py-1.5 rounded-lg text-white text-[11px] flex justify-between items-center border border-white/10">
                   <span className="truncate">📍 {inc.sector}</span>
-                  <span className="text-primary-fixed font-bold font-data-mono shrink-0">{inc.drainId || 'Unlinked'}</span>
+                  <span className="text-primary-fixed font-bold font-data-mono shrink-0 ml-1">{inc.drainId || 'Winneba Swale'}</span>
                 </div>
               </div>
 
@@ -223,14 +252,36 @@ export default function IncidentsView({
                   {inc.title}
                 </h3>
 
+                {/* Refuse Type Material Tag */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                    🗑️ {inc.refuseType || inc.category || 'Refuse Material'}
+                  </span>
+                  {inc.estimatedWasteVolume && (
+                    <span className="text-[10px] font-data-mono text-outline font-semibold">
+                      {inc.estimatedWasteVolume}
+                    </span>
+                  )}
+                </div>
+
                 <p className="text-[12px] text-on-surface-variant line-clamp-2 leading-relaxed">
                   {inc.description}
                 </p>
 
                 <div className="bg-surface-container-low p-2.5 rounded-xl border border-outline-variant/40 text-[11px] flex items-center justify-between">
-                  <span className="text-outline">Estimated Refuse:</span>
-                  <span className="font-bold text-on-surface">{inc.estimatedWasteVolume || 'N/A'}</span>
+                  <span className="text-outline">Reported By:</span>
+                  <span className="font-bold text-on-surface truncate ml-2">{inc.reportedBy}</span>
                 </div>
+
+                {inc.aiRiskAssessment && (
+                  <div className="bg-primary/5 p-2 rounded-xl border border-primary/20 text-[11px] flex items-center justify-between text-primary">
+                    <span className="font-semibold flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px]">auto_awesome</span>
+                      AI Risk: {inc.aiRiskAssessment.risk_level || 'Evaluated'}
+                    </span>
+                    <span className="font-data-mono font-bold">{inc.floodRiskScore ? `${inc.floodRiskScore}% Flood Risk` : 'Live Telemetry'}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -241,6 +292,21 @@ export default function IncidentsView({
               </span>
 
               <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                {onLocateOnMap && (
+                  <button
+                    type="button"
+                    title="View Exact Coordinates on Map"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onLocateOnMap(inc);
+                    }}
+                    className="p-1 rounded-lg text-primary hover:bg-primary/10 text-[11px] font-bold flex items-center gap-0.5 px-2 cursor-pointer transition-colors border border-primary/20"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">explore</span>
+                    <span>Map</span>
+                  </button>
+                )}
+
                 {inc.status !== 'resolved' && (
                   <button
                     onClick={(e) => handleUpdateStatus(inc.id, 'resolved', e)}
@@ -309,10 +375,23 @@ export default function IncidentsView({
                     onChange={(e) => setNewCategory(e.target.value)}
                     className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-2.5 text-body-sm"
                   >
-                    <option value="Blocked Drain">Blocked Drain</option>
-                    <option value="Illegal Dumping">Illegal Dumping</option>
-                    <option value="Structural Failure">Structural Failure</option>
-                    <option value="Siltation">Siltation</option>
+                    {categories.length > 0 ? (
+                      categories.map((c) => (
+                        <option key={c.id} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Blocked Drain">Blocked Drain</option>
+                        <option value="Illegal Dumping">Illegal Dumping</option>
+                        <option value="Overflowing Waste">Overflowing Waste</option>
+                        <option value="Flooding">Flooding</option>
+                        <option value="Open Drain">Open Drain</option>
+                        <option value="Waste Accumulation">Waste Accumulation</option>
+                        <option value="Drain Damage">Drain Damage</option>
+                      </>
+                    )}
                   </select>
                 </div>
 

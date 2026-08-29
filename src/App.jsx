@@ -51,6 +51,10 @@ export default function App() {
   const [weather, setWeather] = useState(null);
   const [usersList, setUsersList] = useState([]);
   const [citizenRewards, setCitizenRewards] = useState([]);
+  const [reportCategories, setReportCategories] = useState([]);
+  const [wasteTypes, setWasteTypes] = useState([]);
+  const [rewardCatalog, setRewardCatalog] = useState([]);
+  const [badges, setBadges] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Modals & Selection State
@@ -58,6 +62,8 @@ export default function App() {
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [dispatchItem, setDispatchItem] = useState(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(2);
+  const [focusedLocation, setFocusedLocation] = useState(null);
 
   // Toast Notification State
   const [toastMessage, setToastMessage] = useState(null);
@@ -85,7 +91,11 @@ export default function App() {
         alertsRes,
         weatherRes,
         usersRes,
-        rewardsRes
+        rewardsRes,
+        categoriesRes,
+        wasteRes,
+        catalogRes,
+        badgesRes
       ] = await Promise.all([
         dataService.getMunicipalities(),
         dataService.getKpis(muniId),
@@ -98,7 +108,11 @@ export default function App() {
         dataService.getAlerts(muniId),
         dataService.getWeather(muniId),
         dataService.getUsers(muniId),
-        dataService.getCitizenRewards(muniId)
+        dataService.getCitizenRewards(muniId),
+        dataService.getReportCategories(),
+        dataService.getWasteTypes(),
+        dataService.getRewardCatalog(),
+        dataService.getBadges()
       ]);
 
       if (munisRes?.length) setMunicipalitiesList(munisRes);
@@ -113,6 +127,10 @@ export default function App() {
       if (weatherRes) setWeather(weatherRes);
       if (usersRes) setUsersList(usersRes);
       if (rewardsRes) setCitizenRewards(rewardsRes);
+      if (categoriesRes) setReportCategories(categoriesRes);
+      if (wasteRes) setWasteTypes(wasteRes);
+      if (catalogRes) setRewardCatalog(catalogRes);
+      if (badgesRes) setBadges(badgesRes);
     } catch (err) {
       console.error('Failed to load database records:', err);
     } finally {
@@ -123,6 +141,30 @@ export default function App() {
   useEffect(() => {
     loadData(selectedMunicipalityId);
   }, [selectedMunicipalityId, loadData]);
+
+  // Real-time listener for incoming citizen uploads and reports
+  useEffect(() => {
+    const unsubscribe = dataService.subscribeToReports(
+      (newReport) => {
+        showToast(`🚨 New Citizen Upload: ${newReport.title} (${newReport.refuseType || 'Refuse'})!`);
+        setUnreadNotificationsCount((prev) => prev + 1);
+        setIncidents((prev) => [newReport, ...prev.filter((p) => p.id !== newReport.id)]);
+      },
+      (updatedReport) => {
+        setIncidents((prev) =>
+          prev.map((p) =>
+            p.rawId === updatedReport.id || p.id === `REP-${String(updatedReport.id).padStart(3, '0')}`
+              ? { ...p, rawStatus: updatedReport.status }
+              : p
+          )
+        );
+      }
+    );
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   const selectedMunicipality =
     municipalitiesList.find((m) => m.id === selectedMunicipalityId) ||
@@ -164,6 +206,26 @@ export default function App() {
 
   const handleSelectIncident = (incident) => {
     setSelectedIncident(incident);
+  };
+
+  // Locate and center directly on the interactive map
+  const handleLocateOnMap = (item) => {
+    if (!item) return;
+    const lat = item.latitude || item.coordinates?.lat || 5.3556;
+    const lng = item.longitude || item.coordinates?.lng || -0.6247;
+    setFocusedLocation({
+      lat,
+      lng,
+      zoom: 17,
+      id: item.id,
+      title: item.title || item.name
+    });
+    setCurrentView('dashboard');
+    if (item.sourceTable === 'reports' || item.severity) {
+      setSelectedIncident(item);
+    } else {
+      setSelectedSegment(item);
+    }
   };
 
   const handleOpenDispatch = (item) => {
@@ -229,6 +291,12 @@ export default function App() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           weatherData={weather}
+          incidents={incidents}
+          unreadCount={unreadNotificationsCount}
+          onSelectIncident={handleSelectIncident}
+          onLocateOnMap={handleLocateOnMap}
+          onClearUnread={() => setUnreadNotificationsCount(0)}
+          onNavigateView={(v) => setCurrentView(v)}
           onOpenHelp={() => setIsHelpOpen(true)}
         />
 
@@ -238,9 +306,12 @@ export default function App() {
             <DashboardView
               kpis={kpis}
               drainageSegments={drainageSegments}
+              incidents={incidents}
+              focusedLocation={focusedLocation}
               priorityActions={priorityActions}
               selectedMunicipality={selectedMunicipality}
               onSelectSegment={handleSelectSegment}
+              onSelectIncident={handleSelectIncident}
               selectedSegmentId={selectedSegment?.id}
               onDispatchAction={handleOpenDispatch}
               onViewDetailsAction={(action) => {
@@ -257,9 +328,11 @@ export default function App() {
           {currentView === 'incidents' && (
             <IncidentsView
               incidents={incidents}
+              categories={reportCategories}
               onSelectIncident={handleSelectIncident}
               onOpenDispatch={handleOpenDispatch}
               onUpdateStatus={handleUpdateIncidentStatus}
+              onLocateOnMap={handleLocateOnMap}
             />
           )}
 
@@ -325,6 +398,9 @@ export default function App() {
           {currentView === 'waste-intelligence' && (
             <WasteIntelligenceView
               citizenRewards={citizenRewards}
+              wasteTypes={wasteTypes}
+              rewardCatalog={rewardCatalog}
+              badges={badges}
               onOpenDispatch={handleOpenDispatch}
               onRefreshData={() => loadData(selectedMunicipalityId)}
             />
@@ -391,6 +467,7 @@ export default function App() {
         incident={selectedIncident}
         onOpenDispatch={handleOpenDispatch}
         onUpdateStatus={handleUpdateIncidentStatus}
+        onLocateOnMap={handleLocateOnMap}
       />
 
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />

@@ -48,6 +48,8 @@ export default function OpenStreetMapViewer({
   drainageSegments = [],
   incidents = [],
   selectedSegmentId = null,
+  selectedIncidentId = null,
+  focusedLocation = null,
   onSelectSegment,
   onSelectIncident,
   onSelectLocation,
@@ -543,6 +545,18 @@ export default function OpenStreetMapViewer({
       );
     }
   }, [selectedSegmentId, drainageSegments]);
+
+  // Recenter / Pan smoothly if focusedLocation changes (e.g. from notification map icon click)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !focusedLocation) return;
+    if (focusedLocation.lat && focusedLocation.lng) {
+      mapInstanceRef.current.flyTo(
+        [Number(focusedLocation.lat), Number(focusedLocation.lng)],
+        focusedLocation.zoom || 17,
+        { duration: 1.2 }
+      );
+    }
+  }, [focusedLocation]);
 
   const handleRecenter = () => {
     if (mapInstanceRef.current) {
