@@ -23,7 +23,7 @@ export default function IncidentsView({
   const [newDesc, setNewDesc] = useState('');
 
   useEffect(() => {
-    if (initialIncidents?.length) {
+    if (initialIncidents) {
       setIncidentsList(initialIncidents);
     }
   }, [initialIncidents]);

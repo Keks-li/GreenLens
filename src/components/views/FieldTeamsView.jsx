@@ -4,7 +4,7 @@ export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispa
   const [teams, setTeams] = useState(propTeams || []);
 
   useEffect(() => {
-    if (propTeams?.length) {
+    if (propTeams) {
       setTeams(propTeams);
     }
   }, [propTeams]);

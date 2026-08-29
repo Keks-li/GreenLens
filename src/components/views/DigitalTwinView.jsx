@@ -9,90 +9,59 @@ export default function DigitalTwinView({
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState('D-102');
 
-  const nodesData = {
-    'D-102': {
-      id: 'D-102',
-      name: 'Drain D-102',
-      location: 'Liberation Road Intersect, Ward 4',
-      sector: 'Central Market Sector',
-      status: 'Critical',
-      riskLevel: 'critical',
-      blockagePercent: 82,
-      riskScore: 91,
-      flowCapacityText: '68% / 1200L/s',
-      flowDropNote: 'Sudden drop detected 45 mins ago',
-      aiInsight: 'Severe solid waste buildup detected at choke point. Probability of localized flooding during next rain event is 94%.',
-      recommendedAction: 'Dispatch rapid response cleanup team with heavy lifting equipment within 6 hours.',
-      telemetryLogs: [
-        { time: '14:02:11', id: 'SNR-VL-89', status: 'OK', type: 'ok' },
-        { time: '14:02:15', id: 'SNR-DP-12', status: 'WARN_SILT', type: 'warning' },
-        { time: '14:02:18', id: 'CAM-AI-04', status: 'BLOCK_DETECT', type: 'critical' },
-        { time: '14:02:22', id: 'WTR-LV-01', status: '+14cm/hr', type: 'high' },
-        { time: '14:02:25', id: 'SNR-VL-89', status: 'OK', type: 'ok' },
-      ],
-      coords: { lat: 5.3562, lng: -0.6231 }
-    },
-    'D-117': {
-      id: 'D-117',
-      name: 'Drain D-117',
-      location: 'Methodist School Bypass, Ward 2',
-      sector: 'South Residential',
-      status: 'High Risk',
-      riskLevel: 'high',
-      blockagePercent: 68,
-      riskScore: 87,
-      flowCapacityText: '74% / 950L/s',
-      flowDropNote: 'Structural wall deformation detected',
-      aiInsight: 'Wall collapse constricting main conduit. High vulnerability during next rainfall.',
-      recommendedAction: 'Deploy excavator and masonry crew within 8 hours.',
-      telemetryLogs: [
-        { time: '14:01:40', id: 'SNR-ST-04', status: 'STRUCT_DEF', type: 'high' },
-        { time: '14:01:55', id: 'SNR-DP-08', status: 'FLOW_WARN', type: 'warning' },
-        { time: '14:02:05', id: 'CAM-AI-09', status: 'RUBBLE_DET', type: 'high' },
-      ],
-      coords: { lat: 5.3489, lng: -0.6190 }
-    },
-    'D-104': {
-      id: 'D-104',
-      name: 'Drain D-104',
-      location: 'University Link Highway, North Ward',
-      sector: 'North Campus Zone',
-      status: 'Critical',
-      riskLevel: 'critical',
-      blockagePercent: 85,
-      riskScore: 95,
-      flowCapacityText: '52% / 1800L/s',
-      flowDropNote: 'Upstream Retention Backflow Active',
-      aiInsight: 'Critical bottleneck choking arterial drainage. Immediate flooding hazard.',
-      recommendedAction: 'Emergency Strike Unit high-volume pumping intervention.',
-      telemetryLogs: [
-        { time: '14:03:01', id: 'SNR-LV-10', status: 'CRIT_SURGE', type: 'critical' },
-        { time: '14:03:10', id: 'CAM-AI-11', status: 'BACKFLOW', type: 'critical' },
-      ],
-      coords: { lat: 5.3645, lng: -0.6280 }
-    },
-    'D-201': {
-      id: 'D-201',
-      name: 'Drain D-201',
-      location: 'Lowtown Main Avenue Conduit',
-      sector: 'Lowtown Community',
-      status: 'Healthy',
-      riskLevel: 'healthy',
-      blockagePercent: 22,
-      riskScore: 28,
-      flowCapacityText: '96% / 1100L/s',
-      flowDropNote: 'Optimal operational flow',
-      aiInsight: 'Hydraulic capacity optimal. Post-cleaning inspection completed.',
-      recommendedAction: 'Routine monitoring only.',
-      telemetryLogs: [
-        { time: '14:00:20', id: 'SNR-VL-19', status: 'OK', type: 'ok' },
-        { time: '14:01:00', id: 'SNR-DP-02', status: 'CLEAR', type: 'ok' },
-      ],
-      coords: { lat: 5.3510, lng: -0.6310 }
-    }
-  };
+  const nodesData = (drainageSegments || []).reduce((acc, seg) => {
+    const isCrit = seg.riskLevel === 'critical' || seg.riskScore >= 80;
+    const isHigh = seg.riskLevel === 'high' || (seg.riskScore >= 60 && seg.riskScore < 80);
+    const capacityNum = Math.round((seg.capacityM3S || 10) * 100);
+    const flowPercent = Math.max(10, 100 - (seg.blockagePercent || 0));
 
-  const currentNode = nodesData[selectedNodeId] || nodesData['D-102'];
+    acc[seg.id] = {
+      id: seg.id,
+      name: seg.name || `Drain ${seg.id}`,
+      location: `${seg.sector || 'Catchment Area'}, Ward ${seg.id.replace(/\D/g, '') || '1'}`,
+      sector: seg.sector || 'Catchment Area',
+      status: seg.status || (isCrit ? 'Critical' : isHigh ? 'High Risk' : 'Healthy'),
+      riskLevel: seg.riskLevel || (isCrit ? 'critical' : isHigh ? 'high' : 'healthy'),
+      blockagePercent: Number(seg.blockagePercent ?? 0),
+      riskScore: Number(seg.riskScore ?? 50),
+      flowCapacityText: `${flowPercent}% / ${capacityNum}L/s`,
+      flowDropNote: seg.thermalScanStatus || (isCrit ? 'Sudden drop detected — debris accumulation' : 'Normal operational flow'),
+      aiInsight: seg.aiDirective || (isCrit ? 'Severe solid waste buildup detected at choke point. High probability of overflow during next rain event.' : 'Hydraulic capacity nominal. Continuous telemetry active.'),
+      recommendedAction: seg.aiDirective || (isCrit ? 'Dispatch rapid response clearance crew with high-volume jetter.' : 'Routine monitoring.'),
+      imageUrl: seg.imageUrl || 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=600&q=80',
+      telemetryLogs: [
+        { time: '14:02:11', id: `SNR-VL-${seg.id.replace(/\D/g, '') || '01'}`, status: 'OK', type: 'ok' },
+        { time: '14:02:15', id: `SNR-DP-${seg.id.replace(/\D/g, '') || '02'}`, status: isCrit ? 'WARN_SILT' : 'CLEAR', type: isCrit ? 'warning' : 'ok' },
+        { time: '14:02:18', id: `CAM-AI-${seg.id.replace(/\D/g, '') || '03'}`, status: isCrit ? 'BLOCK_DETECT' : 'FLOW_OK', type: isCrit ? 'critical' : 'ok' },
+        { time: '14:02:22', id: `WTR-LV-${seg.id.replace(/\D/g, '') || '04'}`, status: isCrit ? '+14cm/hr' : 'STABLE', type: isCrit ? 'high' : 'ok' },
+        { time: '14:02:25', id: `SNR-VL-${seg.id.replace(/\D/g, '') || '01'}`, status: 'OK', type: 'ok' },
+      ],
+      coords: {
+        lat: seg.coordinates?.lat || 5.3556,
+        lng: seg.coordinates?.lng || -0.6247
+      }
+    };
+    return acc;
+  }, {});
+
+  const firstNodeId = drainageSegments[0]?.id || 'D-102';
+  const currentNode = nodesData[selectedNodeId] || nodesData[firstNodeId] || {
+    id: 'D-102',
+    name: 'Drain D-102',
+    location: 'Winneba Catchment',
+    sector: 'Central Sector',
+    status: 'Healthy',
+    riskLevel: 'healthy',
+    blockagePercent: 0,
+    riskScore: 0,
+    flowCapacityText: '100% / 1000L/s',
+    flowDropNote: 'Telemetry Active',
+    aiInsight: 'Monitoring active.',
+    recommendedAction: 'Routine monitoring.',
+    imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=600&q=80',
+    telemetryLogs: [],
+    coords: { lat: 5.3556, lng: -0.6247 }
+  };
 
   const handleSelectNode = (segment) => {
     const id = segment?.id || segment;
@@ -192,15 +161,7 @@ export default function DigitalTwinView({
           {currentNode.id && (
             <div className="relative rounded-2xl overflow-hidden h-36 border border-outline-variant/60 bg-surface-container shrink-0">
               <img
-                src={
-                  currentNode.id === 'D-102'
-                    ? 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=600&q=80'
-                    : currentNode.id === 'D-117'
-                    ? 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=600&q=80'
-                    : currentNode.id === 'D-104'
-                    ? 'https://images.unsplash.com/photo-1590496793929-36417d3117de?auto=format&fit=crop&w=600&q=80'
-                    : 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=600&q=80'
-                }
+                src={currentNode.imageUrl}
                 alt={currentNode.name}
                 className="w-full h-full object-cover"
               />

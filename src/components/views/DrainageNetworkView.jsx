@@ -17,7 +17,7 @@ export default function DrainageNetworkView({
   const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
-    if (propSegments?.length) {
+    if (propSegments) {
       setSegments(propSegments);
     }
   }, [propSegments]);

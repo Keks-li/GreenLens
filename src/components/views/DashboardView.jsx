@@ -6,8 +6,9 @@ import AIPriorityList from '../dashboard/AIPriorityList';
 
 export default function DashboardView({
   kpis,
-  drainageSegments,
+  drainageSegments = [],
   incidents = [],
+  weather = null,
   focusedLocation = null,
   priorityActions,
   selectedMunicipality,
@@ -18,6 +19,25 @@ export default function DashboardView({
   onViewDetailsAction,
   onInspectRisk
 }) {
+  const segments = drainageSegments || [];
+  const criticalDrainsCount = segments.filter(
+    (s) => s.riskLevel === 'critical' || s.riskScore >= 80 || s.blockagePercent >= 75
+  ).length;
+
+  const highRiskSectors = new Set();
+  segments.forEach((s) => {
+    if (s.riskLevel === 'critical' || s.riskLevel === 'high' || s.riskScore >= 70) {
+      if (s.sector) highRiskSectors.add(s.sector);
+    }
+  });
+  (incidents || []).forEach((inc) => {
+    if (inc.severity === 'critical' || inc.severity === 'high') {
+      if (inc.sector) highRiskSectors.add(inc.sector);
+    }
+  });
+  const highRiskCommunitiesCount = highRiskSectors.size || (criticalDrainsCount > 0 ? criticalDrainsCount : 1);
+  const rainForecastHours = weather?.rainForecastHours || 18;
+
   return (
     <div className="flex flex-col w-full">
       <div className="px-8 py-6 w-full max-w-[1440px] mx-auto">
@@ -58,9 +78,9 @@ export default function DashboardView({
           {/* Right: Risk Summary & AI Recs (4 cols) */}
           <div className="xl:col-span-4 flex flex-col gap-6">
             <RiskSummary
-              criticalDrainsCount={12}
-              highRiskCommunitiesCount={4}
-              rainForecastHours={18}
+              criticalDrainsCount={criticalDrainsCount}
+              highRiskCommunitiesCount={highRiskCommunitiesCount}
+              rainForecastHours={rainForecastHours}
               onInspectRisk={onInspectRisk}
             />
 

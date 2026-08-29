@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 
-export default function AIInsightsView({ onOpenDispatch }) {
+export default function AIInsightsView({ drainageSegments = [], priorityActions = [], onOpenDispatch }) {
   const [rainfallMm, setRainfallMm] = useState(45);
   const [debrisIncreasePercent, setDebrisIncreasePercent] = useState(20);
   const [proactiveCleanApplied, setProactiveCleanApplied] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
 
-  // Computed hydraulic simulation outcomes
+  // Compute dynamic hydraulic simulation outcomes based on drainage database records
+  const totalDrainsCount = drainageSegments.length || 6;
+  const highRiskDrains = drainageSegments.filter(s => s.riskLevel === 'critical' || s.riskScore >= 75);
+  const topChokePoints = highRiskDrains.length > 0 ? highRiskDrains.slice(0, 2) : drainageSegments.slice(0, 2);
+
   const baseRisk = Math.min(100, Math.round(rainfallMm * 0.7 + debrisIncreasePercent * 0.8));
   const effectiveRisk = proactiveCleanApplied ? Math.max(20, baseRisk - 35) : baseRisk;
-  const criticalDrainsCount = effectiveRisk > 75 ? Math.round(effectiveRisk / 8) : Math.round(effectiveRisk / 15);
+  const criticalDrainsCount = effectiveRisk > 75 
+    ? Math.max(1, Math.min(totalDrainsCount, Math.round((effectiveRisk / 100) * totalDrainsCount))) 
+    : Math.max(0, Math.round((effectiveRisk / 100) * (totalDrainsCount / 2)));
   const estimatedWaterVolume = Math.round(rainfallMm * 240 * (1 + debrisIncreasePercent / 100));
   const affectedPopulation = Math.round(effectiveRisk * 85);
 
@@ -30,7 +36,7 @@ export default function AIInsightsView({ onOpenDispatch }) {
             <h1 className="font-headline-lg text-on-surface">AI Simulation &amp; Predictive Insights</h1>
           </div>
           <p className="font-body-md text-on-surface-variant">
-            Run real-time multi-variable hydraulic what-if simulations to evaluate storm impacts before rainfall onset.
+            Run real-time multi-variable hydraulic what-if simulations to evaluate storm impacts across {totalDrainsCount} monitored infrastructure segments.
           </p>
         </div>
 
@@ -39,7 +45,7 @@ export default function AIInsightsView({ onOpenDispatch }) {
           className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
           <span className="material-symbols-outlined text-[18px]">play_arrow</span>
-          Run Neural Simulation
+          {isSimulating ? 'Simulating...' : 'Run Neural Simulation'}
         </button>
       </div>
 
@@ -102,7 +108,7 @@ export default function AIInsightsView({ onOpenDispatch }) {
           <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/40 flex items-center justify-between">
             <div>
               <div className="font-semibold text-on-surface text-[13px]">Proactive Clearance Applied</div>
-              <p className="text-[11px] text-on-surface-variant">Simulate dispatching 4 cleanup teams before storm peak</p>
+              <p className="text-[11px] text-on-surface-variant">Simulate dispatching cleanup teams before storm peak</p>
             </div>
             <button
               onClick={() => setProactiveCleanApplied(!proactiveCleanApplied)}
@@ -123,7 +129,7 @@ export default function AIInsightsView({ onOpenDispatch }) {
             <span className="material-symbols-outlined text-primary text-[24px]">verified</span>
             <div className="text-[12px]">
               <span className="font-bold text-on-surface block">94.6% Historical Model Accuracy</span>
-              <span className="text-on-surface-variant">Calibrated against 2021-2025 Winneba flooding benchmarks.</span>
+              <span className="text-on-surface-variant">Calibrated against municipal drainage GIS benchmarks.</span>
             </div>
           </div>
         </div>
@@ -185,17 +191,21 @@ export default function AIInsightsView({ onOpenDispatch }) {
               </div>
               <p className="text-on-surface-variant">
                 Under {rainfallMm}mm/hr rainfall with +{debrisIncreasePercent}% debris obstruction,{' '}
-                <strong className="text-on-surface">Drain D-102 (Central Market)</strong> and{' '}
-                <strong className="text-on-surface">Drain D-104 (North Campus)</strong> will exceed maximum throughput
-                within 45 minutes of storm onset.
+                {topChokePoints.map((cp, idx) => (
+                  <span key={cp.id}>
+                    {idx > 0 ? ' and ' : ''}
+                    <strong className="text-on-surface">{cp.name || cp.id} ({cp.sector})</strong>
+                  </span>
+                ))}{' '}
+                will exceed maximum hydraulic throughput within 45 minutes of storm onset.
               </p>
               {proactiveCleanApplied ? (
                 <p className="text-primary font-semibold bg-primary/10 p-2.5 rounded-lg">
-                  ✓ Proactive clearance mitigates estimated flood extent by 68%, safeguarding 2,800 market stalls.
+                  ✓ Proactive clearance mitigates estimated flood extent by 68%, safeguarding critical community corridors.
                 </p>
               ) : (
                 <p className="text-risk-critical font-semibold bg-error-container/40 p-2.5 rounded-lg">
-                  ⚠️ Action Required: Without pre-storm clearance, surface runoff will overflow onto Liberation Road.
+                  ⚠️ Action Required: Without pre-storm clearance, surface runoff will overflow onto arterial transport links.
                 </p>
               )}
             </div>
@@ -204,8 +214,8 @@ export default function AIInsightsView({ onOpenDispatch }) {
           <div className="pt-3 border-t border-outline-variant/40 flex items-center justify-between">
             <span className="text-[12px] text-outline font-data-mono">Est. Runoff: {estimatedWaterVolume.toLocaleString()} m³</span>
             <button
-              onClick={() => onOpenDispatch && onOpenDispatch({ id: 'D-102', name: 'Simulated Choke Points (D-102 & D-104)' })}
-              className="bg-primary text-on-primary px-5 py-2 rounded-xl text-[12px] font-label-caps hover:bg-surface-tint shadow-xs flex items-center gap-2"
+              onClick={() => onOpenDispatch && onOpenDispatch(topChokePoints[0] || { id: 'D-102', name: 'Simulated Choke Points' })}
+              className="bg-primary text-on-primary px-5 py-2 rounded-xl text-[12px] font-label-caps hover:bg-surface-tint shadow-xs flex items-center gap-2 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px]">local_shipping</span>
               Dispatch Proactive Teams

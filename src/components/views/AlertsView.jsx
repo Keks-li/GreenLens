@@ -47,7 +47,7 @@ export default function AlertsView({ currentUser, alertsList: propAlerts, onRefr
   ]);
 
   useEffect(() => {
-    if (propAlerts?.length) {
+    if (propAlerts && propAlerts.length > 0) {
       setAlerts(propAlerts.map(a => ({
         id: a.id,
         title: a.title,

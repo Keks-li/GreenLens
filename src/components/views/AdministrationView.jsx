@@ -49,10 +49,19 @@ export default function AdministrationView({
   ]);
 
   useEffect(() => {
-    if (propUsersList?.length) {
-      setUsers(propUsersList);
+    if (propUsersList) {
+      const enhanced = propUsersList.map((u) => {
+        const userReports = (incidentsList || []).filter(
+          (i) => i.reportedBy === u.name || i.reporterContact === u.phone || i.reporterContact === u.email || i.user_id === u.id
+        );
+        return {
+          ...u,
+          reportsCount: userReports.length || u.reportsCount || 0
+        };
+      });
+      setUsers(enhanced);
     }
-  }, [propUsersList]);
+  }, [propUsersList, incidentsList]);
 
   // Filtered Users List
   const filteredUsers = users.filter((u) => {

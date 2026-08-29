@@ -307,6 +307,7 @@ export default function App() {
               kpis={kpis}
               drainageSegments={drainageSegments}
               incidents={incidents}
+              weather={weather}
               focusedLocation={focusedLocation}
               priorityActions={priorityActions}
               selectedMunicipality={selectedMunicipality}
@@ -401,6 +402,8 @@ export default function App() {
               wasteTypes={wasteTypes}
               rewardCatalog={rewardCatalog}
               badges={badges}
+              drainageSegments={drainageSegments}
+              incidents={incidents}
               onOpenDispatch={handleOpenDispatch}
               onRefreshData={() => loadData(selectedMunicipalityId)}
             />

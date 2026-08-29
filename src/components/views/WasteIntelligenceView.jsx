@@ -6,6 +6,8 @@ export default function WasteIntelligenceView({
   wasteTypes = [],
   rewardCatalog = [],
   badges = [],
+  drainageSegments = [],
+  incidents = [],
   onOpenDispatch,
   onRefreshData
 }) {
@@ -17,7 +19,7 @@ export default function WasteIntelligenceView({
   const [isSubmittingDisbursement, setIsSubmittingDisbursement] = useState(false);
 
   useEffect(() => {
-    if (initialCitizenRewards?.length) {
+    if (initialCitizenRewards) {
       setCitizens(initialCitizenRewards);
     }
   }, [initialCitizenRewards]);
@@ -63,8 +65,28 @@ export default function WasteIntelligenceView({
     }
   };
 
-  // Refuse hotspots tracked in Winneba
-  const wasteHotspots = [
+  // Derive chronic refuse hotspots dynamically from database drainage segments & reports
+  const dynamicHotspots = (drainageSegments || []).map((seg, idx) => {
+    const isCrit = seg.riskLevel === 'critical' || seg.riskScore >= 80;
+    const isHigh = seg.riskLevel === 'high' || (seg.riskScore >= 60 && seg.riskScore < 80);
+    const relatedIncidents = (incidents || []).filter(i => i.drainId?.includes(seg.id) || i.sector === seg.sector);
+    const materialType = relatedIncidents[0]?.refuseType || (seg.sector?.toLowerCase().includes('market') ? 'Single-Use Plastics & Organic Packaging' : 'Plastics & Silt Sediment');
+    const tonnage = ((seg.blockagePercent * 150 + 2500) / 1000).toFixed(1);
+
+    return {
+      id: `HOT-0${idx + 1}`,
+      name: `${seg.name} Hotspot`,
+      sector: seg.sector,
+      tonnageMonthly: `${tonnage} Tons`,
+      primaryMaterial: materialType,
+      severity: isCrit ? 'Critical' : isHigh ? 'High' : 'Moderate',
+      drainAffiliation: `Drain ${seg.id}`,
+      recurrenceRate: isCrit ? 'Weekly Re-accumulation' : 'Rain-Triggered Sedimentation',
+      trend: isCrit ? '+18% vs Last Month' : '-4% Post Enforcement'
+    };
+  });
+
+  const wasteHotspots = dynamicHotspots.length > 0 ? dynamicHotspots : [
     {
       id: 'HOT-01',
       name: 'Central Market Stall 42 Hinterland',
