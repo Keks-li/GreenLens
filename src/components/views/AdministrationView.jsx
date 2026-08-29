@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { getPermissionsForRole } from '../../lib/rbac';
 import { dataService } from '../../lib/supabase';
+import GenerateReportModal from '../modals/GenerateReportModal';
 
 export default function AdministrationView({
   auditLogsList = [],
   usersList: propUsersList,
   incidentsList = [],
   currentUser,
+  selectedMunicipality,
+  kpis,
+  drainageSegments = [],
+  fieldTeams = [],
+  citizenRewards = [],
+  weather,
   onRefreshData,
   onOpenDispatch
 }) {
@@ -21,6 +28,7 @@ export default function AdministrationView({
 
   const [selectedUserDetail, setSelectedUserDetail] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -38,15 +46,7 @@ export default function AdministrationView({
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const [users, setUsers] = useState([
-    { id: 'usr-1', name: 'Kwame Mensah', email: 'kwame.mensah@winneba.gov.gh', phone: '+233 24 555 0192', role: 'Municipal Officer', department: 'Operations Command', status: 'Active', municipalityId: 'winneba', reportsCount: 12 },
-    { id: 'usr-2', name: 'Abena Osei', email: 'abena.osei@winneba.gov.gh', phone: '+233 20 555 0831', role: 'Supervisor', department: 'Field Operations', status: 'Active', municipalityId: 'winneba', reportsCount: 28 },
-    { id: 'usr-3', name: 'Dr. Joseph Ansah', email: 'j.ansah@winneba.gov.gh', phone: '+233 33 232 2011', role: 'Administrator', department: 'Municipal Assembly IT', status: 'Active', municipalityId: 'winneba', reportsCount: 4 },
-    { id: 'usr-4', name: 'Emmanuel Kofi', email: 'e.kofi@winneba.gov.gh', phone: '+233 55 555 9940', role: 'Field Worker Lead', department: 'Rapid Strike Unit', status: 'On Mission', municipalityId: 'winneba', reportsCount: 35 },
-    { id: 'usr-5', name: 'Francisca Arthur', email: 'f.arthur@winneba.gov.gh', phone: '+233 26 555 3311', role: 'Supervisor', department: 'Coastal & Sluice Taskforce', status: 'Active', municipalityId: 'winneba', reportsCount: 19 },
-    { id: 'usr-6', name: 'Kofi Mensah (Citizen Lead)', email: 'kofi.m@community.gh', phone: '+233 24 555 1201', role: 'Citizen Champion', department: 'Central Market Watch', status: 'Active', municipalityId: 'winneba', reportsCount: 18 },
-    { id: 'usr-7', name: 'Ama Serwaa', email: 'ama.s@community.gh', phone: '+233 20 555 3390', role: 'Citizen Champion', department: 'Fisheries Environmental Guild', status: 'Active', municipalityId: 'winneba', reportsCount: 14 }
-  ]);
+  const [users, setUsers] = useState(propUsersList || []);
 
   useEffect(() => {
     if (propUsersList) {
@@ -149,7 +149,7 @@ export default function AdministrationView({
   };
 
   return (
-    <div className="px-8 py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
+    <div className="px-4 sm:px-8 py-4 sm:py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-8 z-50 bg-primary text-on-primary px-5 py-3 rounded-xl shadow-xl border border-primary-fixed flex items-center gap-3 animate-in fade-in">
@@ -170,15 +170,27 @@ export default function AdministrationView({
           </p>
         </div>
 
-        {isAdmin && (
+        <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+          {/* Generate PDF Report Button */}
           <button
-            onClick={() => setShowInviteModal(true)}
-            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+            onClick={() => setShowReportModal(true)}
+            className="bg-surface-container-low border border-outline-variant hover:border-primary/50 text-on-surface hover:text-primary px-4 py-2.5 rounded-xl font-label-caps text-[12px] font-bold shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+            title="Download Municipal Briefing & Audit in PDF format"
           >
-            <span className="material-symbols-outlined text-[18px]">person_add</span>
-            Register New User
+            <span className="material-symbols-outlined text-[18px] text-primary">picture_as_pdf</span>
+            <span>Generate PDF Report</span>
           </button>
-        )}
+
+          {isAdmin && (
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[18px]">person_add</span>
+              <span>Register New User</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Top User Overview Metrics */}
@@ -213,7 +225,7 @@ export default function AdministrationView({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-outline-variant/60 gap-8">
+      <div className="flex border-b border-outline-variant/60 gap-4 sm:gap-8 overflow-x-auto">
         {[
           { id: 'users', label: 'User Directory & Profiles', icon: 'group', badge: filteredUsers.length },
           { id: 'activity', label: 'Global User Activity Stream', icon: 'browse_activity', badge: auditLogsList.length },
@@ -221,7 +233,7 @@ export default function AdministrationView({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`pb-3.5 font-label-caps text-[13px] flex items-center gap-2 transition-all relative cursor-pointer ${
+            className={`pb-3.5 font-label-caps text-[12px] sm:text-[13px] flex items-center gap-2 transition-all relative cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === tab.id
                 ? 'text-primary font-bold border-b-2 border-primary'
                 : 'text-on-surface-variant hover:text-on-surface font-semibold'
@@ -636,6 +648,22 @@ export default function AdministrationView({
           </div>
         </div>
       )}
+
+      {/* Generate Municipal PDF Report Modal */}
+      <GenerateReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        selectedMunicipality={selectedMunicipality}
+        currentUser={currentUser}
+        kpis={kpis}
+        drainageSegments={drainageSegments}
+        incidents={incidentsList}
+        fieldTeams={fieldTeams}
+        citizenRewards={citizenRewards}
+        usersList={users}
+        weather={weather}
+        onSuccess={showToast}
+      />
     </div>
   );
 }

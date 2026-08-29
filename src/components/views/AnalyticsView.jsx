@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
 import { getPermissionsForRole } from '../../lib/rbac';
+import GenerateReportModal from '../modals/GenerateReportModal';
 
-export default function AnalyticsView({ currentUser, kpis, drainageSegments = [], incidents = [] }) {
+export default function AnalyticsView({
+  currentUser,
+  selectedMunicipality,
+  kpis,
+  drainageSegments = [],
+  incidents = [],
+  fieldTeams = [],
+  citizenRewards = [],
+  weather
+}) {
   const userRole = currentUser?.role || 'Municipal Officer';
   const permissions = getPermissionsForRole(userRole);
   const canExport = permissions.canExportReports;
 
   const [dateRange, setDateRange] = useState('month'); // 'week', 'month', 'quarter', 'year'
   const [toastMessage, setToastMessage] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -95,7 +106,7 @@ export default function AnalyticsView({ currentUser, kpis, drainageSegments = []
   const criticalDrainsCleaned = drainageSegments.filter(s => s.status === 'Cleaned' || s.riskLevel === 'healthy').length || 14;
 
   return (
-    <div className="px-8 py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
+    <div className="px-4 sm:px-8 py-4 sm:py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
       {/* Toast */}
       {toastMessage && (
         <div className="fixed top-20 right-8 z-50 bg-primary text-on-primary px-5 py-3 rounded-xl shadow-xl border border-primary-fixed flex items-center gap-3 animate-in fade-in">
@@ -142,11 +153,12 @@ export default function AnalyticsView({ currentUser, kpis, drainageSegments = []
           {canExport ? (
             <>
               <button
-                onClick={() => showToast('Generating comprehensive Municipal PDF Report...')}
+                onClick={() => setShowReportModal(true)}
                 className="bg-primary text-on-primary px-4 py-2 rounded-xl text-[12px] font-label-caps hover:bg-surface-tint shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Download Municipal Briefing & Audit in PDF format"
               >
-                <span className="material-symbols-outlined text-[16px]">download</span>
-                Export PDF
+                <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+                Export PDF Report
               </button>
               <button
                 onClick={() => showToast('Generating CSV Dataset export...')}
@@ -315,6 +327,21 @@ export default function AnalyticsView({ currentUser, kpis, drainageSegments = []
           </table>
         </div>
       </div>
+
+      {/* Generate Municipal PDF Report Modal */}
+      <GenerateReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        selectedMunicipality={selectedMunicipality}
+        currentUser={currentUser}
+        kpis={kpis}
+        drainageSegments={drainageSegments}
+        incidents={incidents}
+        fieldTeams={fieldTeams}
+        citizenRewards={citizenRewards}
+        weather={weather}
+        onSuccess={showToast}
+      />
     </div>
   );
 }

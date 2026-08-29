@@ -14,7 +14,8 @@ export default function Header({
   onLocateOnMap,
   onClearUnread,
   onNavigateView,
-  onOpenHelp
+  onOpenHelp,
+  onToggleMobileNav
 }) {
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [notificationFilter, setNotificationFilter] = useState('all'); // 'all', 'citizen', 'critical'
@@ -58,15 +59,26 @@ export default function Header({
   };
 
   return (
-    <header className="fixed top-0 left-72 right-0 h-16 bg-surface/85 backdrop-blur-md border-b border-outline-variant z-40 flex items-center justify-between px-8 select-none">
-      {/* Left side: Municipality selector & Breadcrumbs */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-on-surface-variant text-body-sm bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant/60">
-          <span className="material-symbols-outlined text-[18px] text-primary">location_city</span>
+    <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-md border-b border-outline-variant z-40 flex items-center justify-between px-3 sm:px-6 md:px-8 select-none gap-2">
+      {/* Left side: Mobile menu button, Municipality selector & Breadcrumbs */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink overflow-hidden">
+        {/* Mobile menu hamburger toggle */}
+        <button
+          onClick={onToggleMobileNav}
+          className="lg:hidden p-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors shrink-0"
+          title="Open Menu"
+          aria-label="Open Navigation Menu"
+        >
+          <span className="material-symbols-outlined text-[24px]">menu</span>
+        </button>
+
+        {/* Municipality Selector */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-on-surface-variant text-body-sm bg-surface-container-low px-2.5 sm:px-3 py-1.5 rounded-lg border border-outline-variant/60 shrink-0">
+          <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-primary">location_city</span>
           <select
             value={selectedMunicipalityId}
             onChange={(e) => onSelectMunicipality(e.target.value)}
-            className="bg-transparent font-semibold text-on-surface focus:outline-none cursor-pointer text-body-sm"
+            className="bg-transparent font-semibold text-on-surface focus:outline-none cursor-pointer text-[12px] sm:text-[13px] max-w-[120px] sm:max-w-none truncate"
           >
             {munisList.map((mun) => (
               <option key={mun.id} value={mun.id}>
@@ -76,38 +88,37 @@ export default function Header({
           </select>
         </div>
 
-        <div className="h-4 w-[1px] bg-outline-variant"></div>
-
-        <nav className="flex items-center gap-2 text-on-surface-variant text-body-sm">
+        {/* Breadcrumbs - Only show on large viewports to prevent collision with search */}
+        <nav className="hidden xl:flex items-center gap-1.5 text-on-surface-variant text-[13px] min-w-0 overflow-hidden pl-3 border-l border-outline-variant/60">
           <span
             onClick={() => onNavigateView && onNavigateView('dashboard')}
-            className="hover:text-primary transition-colors cursor-pointer capitalize"
+            className="hover:text-primary transition-colors cursor-pointer shrink-0 font-medium"
           >
-            {currentView === 'dashboard' ? 'Dashboard' : 'Operations'}
+            {currentView === 'dashboard' ? 'Overview' : 'Operations'}
           </span>
-          <span className="material-symbols-outlined text-[16px] text-outline">chevron_right</span>
-          <span className="text-on-surface font-semibold">{getBreadcrumbTitle(currentView)}</span>
+          <span className="material-symbols-outlined text-[14px] text-outline shrink-0">chevron_right</span>
+          <span className="text-on-surface font-semibold truncate max-w-[160px]">{getBreadcrumbTitle(currentView)}</span>
         </nav>
       </div>
 
       {/* Right side: Search, Telemetry Weather, AI status, Notifications */}
-      <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="relative flex items-center">
-          <span className="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span>
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-auto">
+        {/* Search Input */}
+        <div className="relative flex items-center hidden sm:flex">
+          <span className="material-symbols-outlined absolute left-2.5 text-outline text-[17px] pointer-events-none">search</span>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search city data, drains, incidents..."
-            className="bg-surface-container-low border border-outline-variant rounded-full pl-9 pr-4 py-1.5 text-body-sm w-56 focus:w-64 transition-all focus:ring-1 focus:ring-primary focus:outline-none placeholder:text-outline"
+            placeholder="Search city data..."
+            className="bg-surface-container-low border border-outline-variant rounded-full pl-8 pr-7 py-1.5 text-[12px] sm:text-[13px] w-28 md:w-40 lg:w-44 xl:w-52 focus:w-36 md:focus:w-48 lg:focus:w-56 transition-all focus:ring-1 focus:ring-primary focus:outline-none placeholder:text-outline"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 text-outline hover:text-on-surface cursor-pointer"
+              className="absolute right-2 text-outline hover:text-on-surface cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[16px]">close</span>
+              <span className="material-symbols-outlined text-[15px]">close</span>
             </button>
           )}
         </div>
@@ -117,13 +128,13 @@ export default function Header({
           <button
             type="button"
             onClick={() => setShowWeatherPopover(!showWeatherPopover)}
-            className="flex items-center gap-2 bg-secondary-container/30 border border-secondary/20 px-3 py-1.5 rounded-full shadow-2xs hover:bg-secondary-container/50 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 bg-secondary-container/30 border border-secondary/20 px-2 sm:px-3 py-1.5 rounded-full shadow-2xs hover:bg-secondary-container/50 transition-all cursor-pointer"
             title="Open-Meteo Rainfall & Hydrology Forecast"
           >
-            <span className="material-symbols-outlined text-secondary text-[17px] animate-pulse">cloud</span>
-            <span className="text-body-sm font-bold text-on-secondary-container">{weather?.temp || '28°C'}</span>
-            <span className="text-[11px] text-secondary font-semibold hidden sm:inline flex items-center gap-1">
-              <span>🌧️ {weather?.rain24hMm || '28.5'}mm (24h)</span>
+            <span className="material-symbols-outlined text-secondary text-[16px] sm:text-[17px] animate-pulse">cloud</span>
+            <span className="text-body-sm font-bold text-on-secondary-container text-[12px] sm:text-[13px]">{weather?.temp || '28°C'}</span>
+            <span className="text-[11px] text-secondary font-semibold hidden md:inline flex items-center gap-1">
+              <span>🌧️ {weather?.rain24hMm || '28.5'}mm</span>
             </span>
           </button>
 

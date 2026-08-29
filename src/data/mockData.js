@@ -8,29 +8,23 @@ export const municipalities = [
   { id: 'cape_coast', name: 'Cape Coast Metropolitan', region: 'Central Region, Ghana', lat: 5.1053, lng: -1.2466, zoom: 13 },
 ];
 
-export const demoAccounts = [
+export const seededAdminAccounts = [
   {
-    role: 'Municipal Officer',
-    name: 'Kwame Mensah (Command Lead)',
-    email: 'kwame.mensah@winneba.gov.gh',
-    dept: 'Operations Command',
-    icon: 'shield_person',
-    badge: 'Full Command'
+    id: 'admin-01',
+    role: 'System Administrator',
+    name: 'System Administrator',
+    email: 'admin@greenlens.app',
+    department: 'Municipal Command & IT Governance',
+    status: 'Active',
+    municipalityId: 'winneba'
   },
   {
-    role: 'Field Supervisor',
-    name: 'Abena Osei (Field Lead)',
-    email: 'abena.osei@winneba.gov.gh',
-    dept: 'Field Operations',
-    icon: 'engineering',
-    badge: 'Field Ops'
-  },
-  {
+    id: 'admin-02',
     role: 'System Administrator',
     name: 'Dr. Joseph Ansah (SysAdmin)',
     email: 'admin@winneba.gov.gh',
-    dept: 'Municipal IT & Security',
-    icon: 'admin_panel_settings',
-    badge: 'Admin'
+    department: 'Municipal Assembly IT & Security',
+    status: 'Active',
+    municipalityId: 'winneba'
   }
 ];

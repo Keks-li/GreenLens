@@ -53,11 +53,19 @@
   --color-risk-high: #e65100;
   --color-risk-moderate: #f59e0b;
   --color-risk-healthy: #206d1f;
+  --color-forest-deep: #064E3B;
+  --color-emerald-core: #047857;
+  --color-mint-light: #ECFDF5;
+  --color-surface-subtle: #F8FAFC;
 
   --font-body-sm: 'Plus Jakarta Sans', sans-serif;
-  --font-headline-lg: 'Plus Jakarta Sans', sans-serif;
+  --font-headline-lg: 'Hanken Grotesk', 'Plus Jakarta Sans', sans-serif;
+  --font-headline-md: 'Hanken Grotesk', 'Plus Jakarta Sans', sans-serif;
   --font-body-lg: 'Plus Jakarta Sans', sans-serif;
-  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body-md: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  --font-label-md: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  --font-label-sm: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Hanken Grotesk', 'Plus Jakarta Sans', sans-serif;
   --font-label-caps: 'Plus Jakarta Sans', sans-serif;
   --font-title-md: 'Plus Jakarta Sans', sans-serif;
   --font-title-lg: 'Plus Jakarta Sans', sans-serif;

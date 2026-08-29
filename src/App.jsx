@@ -26,13 +26,7 @@ import { dataService, isSupabaseConfigured } from './lib/supabase';
 import { isViewAllowed, getPermissionsForRole } from './lib/rbac';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState({
-    name: 'Kwame Mensah (Command Lead)',
-    email: 'kwame.mensah@winneba.gov.gh',
-    role: 'Municipal Officer',
-    dept: 'Operations Command',
-    municipalityId: 'winneba'
-  });
+  const [currentUser, setCurrentUser] = useState(null);
 
   const [currentView, setCurrentView] = useState('dashboard');
   const [selectedMunicipalityId, setSelectedMunicipalityId] = useState('winneba');
@@ -64,6 +58,7 @@ export default function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(2);
   const [focusedLocation, setFocusedLocation] = useState(null);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Toast Notification State
   const [toastMessage, setToastMessage] = useState(null);
@@ -271,9 +266,14 @@ export default function App() {
       {/* Sidebar Navigation */}
       <Sidebar
         currentView={currentView}
-        setCurrentView={setCurrentView}
+        setCurrentView={(viewId) => {
+          setCurrentView(viewId);
+          setIsMobileNavOpen(false);
+        }}
         selectedMunicipality={selectedMunicipality}
         currentUser={currentUser}
+        isMobileOpen={isMobileNavOpen}
+        onCloseMobile={() => setIsMobileNavOpen(false)}
         onLogout={() => {
           setCurrentUser(null);
           showToast('Logged out of Command Session.');
@@ -281,7 +281,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <div className="pl-72 flex flex-col min-h-screen">
+      <div className="pl-0 lg:pl-72 flex flex-col min-h-screen w-full overflow-x-hidden">
         {/* Top Header */}
         <Header
           currentView={currentView}
@@ -296,12 +296,16 @@ export default function App() {
           onSelectIncident={handleSelectIncident}
           onLocateOnMap={handleLocateOnMap}
           onClearUnread={() => setUnreadNotificationsCount(0)}
-          onNavigateView={(v) => setCurrentView(v)}
+          onNavigateView={(v) => {
+            setCurrentView(v);
+            setIsMobileNavOpen(false);
+          }}
           onOpenHelp={() => setIsHelpOpen(true)}
+          onToggleMobileNav={() => setIsMobileNavOpen((prev) => !prev)}
         />
 
         {/* Main Routed Views */}
-        <main className="relative pt-16 min-h-screen bg-background pb-12">
+        <main className="relative pt-16 min-h-screen bg-background pb-12 w-full">
           {currentView === 'dashboard' && (
             <DashboardView
               kpis={kpis}
@@ -420,9 +424,13 @@ export default function App() {
           {currentView === 'analytics' && (
             <AnalyticsView
               currentUser={currentUser}
+              selectedMunicipality={selectedMunicipality}
               kpis={kpis}
               drainageSegments={drainageSegments}
               incidents={incidents}
+              fieldTeams={fieldTeams}
+              citizenRewards={citizenRewards}
+              weather={weather}
             />
           )}
 
@@ -440,6 +448,12 @@ export default function App() {
               usersList={usersList}
               incidentsList={incidents}
               currentUser={currentUser}
+              selectedMunicipality={selectedMunicipality}
+              kpis={kpis}
+              drainageSegments={drainageSegments}
+              fieldTeams={fieldTeams}
+              citizenRewards={citizenRewards}
+              weather={weather}
               onRefreshData={() => loadData(selectedMunicipalityId)}
               onOpenDispatch={handleOpenDispatch}
             />

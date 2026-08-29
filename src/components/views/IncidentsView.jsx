@@ -108,7 +108,7 @@ export default function IncidentsView({
   };
 
   return (
-    <div className="px-8 py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
+    <div className="px-4 sm:px-8 py-4 sm:py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-8 z-50 bg-primary text-on-primary px-5 py-3 rounded-xl shadow-xl border border-primary-fixed flex items-center gap-3 animate-in fade-in">
@@ -155,12 +155,12 @@ export default function IncidentsView({
         {/* Filter Dropdowns */}
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {/* Status Filter */}
-          <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl border border-outline-variant/60">
+          <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl border border-outline-variant/60 overflow-x-auto max-w-full">
             {['all', 'unresolved', 'assigned', 'in-progress', 'resolved'].map((st) => (
               <button
                 key={st}
                 onClick={() => setFilterStatus(st)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-label-caps uppercase transition-colors ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-label-caps uppercase transition-colors shrink-0 whitespace-nowrap ${
                   filterStatus === st
                     ? 'bg-primary text-on-primary font-bold shadow-xs'
                     : 'text-on-surface-variant hover:bg-surface-container'

@@ -168,7 +168,7 @@ export default function WasteIntelligenceView({
   const airtimePackages = (rewardCatalog || []).filter(r => !dataPackages.some(dp => dp.id === r.id));
 
   return (
-    <div className="px-8 py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
+    <div className="px-4 sm:px-8 py-4 sm:py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
       {/* Toast */}
       {toastMessage && (
         <div className="fixed top-20 right-8 z-50 bg-primary text-on-primary px-5 py-3 rounded-xl shadow-xl border border-primary-fixed flex items-center gap-3 animate-in fade-in">
@@ -248,17 +248,17 @@ export default function WasteIntelligenceView({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-outline-variant/60 gap-8">
+      <div className="flex border-b border-outline-variant/60 gap-4 sm:gap-8 overflow-x-auto">
         {[
-          { id: 'citizens', label: 'Citizen Data & Airtime Rewards Ledger', icon: 'military_tech', badge: citizens.length },
-          { id: 'catalog', label: 'Data & Airtime Packages Catalog', icon: 'redeem', badge: rewardCatalog.length || undefined },
+          { id: 'citizens', label: 'Citizen Rewards Ledger', icon: 'military_tech', badge: citizens.length },
+          { id: 'catalog', label: 'Packages Catalog', icon: 'redeem', badge: rewardCatalog.length || undefined },
           { id: 'hotspots', label: 'Chronic Refuse Hotspots', icon: 'near_me', badge: wasteHotspots.length },
           { id: 'materials', label: 'Waste Ontology & Recyclables', icon: 'pie_chart', badge: wasteTypes.length || undefined }
         ].map((t) => (
           <button
             key={t.id}
             onClick={() => setSelectedTab(t.id)}
-            className={`pb-3.5 font-label-caps text-[13px] flex items-center gap-2 transition-all relative cursor-pointer ${
+            className={`pb-3.5 font-label-caps text-[12px] sm:text-[13px] flex items-center gap-2 transition-all relative cursor-pointer shrink-0 whitespace-nowrap ${
               selectedTab === t.id
                 ? 'text-primary font-bold border-b-2 border-primary'
                 : 'text-on-surface-variant hover:text-on-surface font-semibold'

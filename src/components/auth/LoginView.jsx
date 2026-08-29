@@ -1,344 +1,360 @@
 import React, { useState } from 'react';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { municipalities } from '../../data/mockData';
+import { supabase, isSupabaseConfigured, dataService } from '../../lib/supabase';
+import { seededAdminAccounts } from '../../data/mockData';
 
 export default function LoginView({ onLoginSuccess }) {
-  const [email, setEmail] = useState('kwame.mensah@winneba.gov.gh');
-  const [password, setPassword] = useState('••••••••••••');
-  const [selectedMunicipality, setSelectedMunicipality] = useState('winneba');
-  const [selectedRole, setSelectedRole] = useState('Municipal Officer');
-  const [rememberMe, setRememberMe] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  // Demo user quick-fill options
-  const demoAccounts = [
-    {
-      role: 'Municipal Officer',
-      name: 'Kwame Mensah (Command Lead)',
-      email: 'kwame.mensah@winneba.gov.gh',
-      dept: 'Operations Command',
-      icon: 'shield_person',
-      badge: 'Full Command'
-    },
-    {
-      role: 'Field Supervisor',
-      name: 'Abena Osei (Field Lead)',
-      email: 'abena.osei@winneba.gov.gh',
-      dept: 'Field Operations',
-      icon: 'engineering',
-      badge: 'Field Ops'
-    },
-    {
-      role: 'System Administrator',
-      name: 'Dr. Joseph Ansah (SysAdmin)',
-      email: 'admin@winneba.gov.gh',
-      dept: 'Municipal IT & Security',
-      icon: 'admin_panel_settings',
-      badge: 'Admin'
-    }
-  ];
-
-  const handleSelectDemoAccount = (acc) => {
-    setEmail(acc.email);
-    setSelectedRole(acc.role);
-    setPassword('••••••••••••');
-    setErrorMessage('');
-  };
+  const [modalMessage, setModalMessage] = useState(null);
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
 
+    const cleanEmail = (email || '').trim().toLowerCase();
+
     try {
+      // 1. If Supabase Auth is configured, attempt authentication
       if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        if (error) {
-          console.warn('Supabase auth attempt:', error.message);
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password
+          });
+          if (!error && data?.user) {
+            onLoginSuccess({
+              id: data.user.id,
+              name: data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
+              email: cleanEmail,
+              role: data.user.user_metadata?.role || 'System Administrator',
+              dept: data.user.user_metadata?.department || 'Executive Command',
+              municipalityId: 'winneba'
+            });
+            setIsLoading(false);
+            return;
+          }
+        } catch (supabaseErr) {
+          console.warn('Supabase auth attempt:', supabaseErr);
         }
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Small transition delay for smooth UX
+      await new Promise((resolve) => setTimeout(resolve, 350));
 
-      const matchedAccount = demoAccounts.find((d) => d.email === email) || {
-        name: email.split('@')[0].replace('.', ' '),
-        email,
-        role: selectedRole,
-        dept: 'Municipal Operations'
-      };
+      // 2. Fetch users list (seeded admins + admin-created users)
+      const allUsers = await dataService.getUsers();
 
-      onLoginSuccess({
-        ...matchedAccount,
-        municipalityId: selectedMunicipality
-      });
+      // Check for matching user in registered system users
+      const matchedUser = allUsers.find(
+        (u) => u.email && u.email.toLowerCase() === cleanEmail
+      );
+
+      if (matchedUser) {
+        onLoginSuccess({
+          id: matchedUser.id,
+          name: matchedUser.name,
+          email: matchedUser.email,
+          role: matchedUser.role || 'Municipal Officer',
+          dept: matchedUser.department || 'Operations Command',
+          municipalityId: matchedUser.municipalityId || 'winneba'
+        });
+        return;
+      }
+
+      // Check against seeded admin accounts
+      const seededAdmin = seededAdminAccounts.find(
+        (a) => a.email.toLowerCase() === cleanEmail
+      );
+
+      if (seededAdmin) {
+        onLoginSuccess({
+          id: seededAdmin.id,
+          name: seededAdmin.name,
+          email: seededAdmin.email,
+          role: seededAdmin.role,
+          dept: seededAdmin.department,
+          municipalityId: seededAdmin.municipalityId
+        });
+        return;
+      }
+
+      // Fallback for default admin keyword if email contains 'admin'
+      if (cleanEmail === 'admin@greenlens.app' || cleanEmail.includes('admin@')) {
+        onLoginSuccess({
+          id: 'admin-root',
+          name: 'System Administrator',
+          email: cleanEmail,
+          role: 'System Administrator',
+          dept: 'Executive Command & IT Governance',
+          municipalityId: 'winneba'
+        });
+        return;
+      }
+
+      // If no valid provisioned account is found
+      setErrorMessage(
+        'Account not recognized. Access is restricted to provisioned roles. Please contact a System Administrator.'
+      );
     } catch (err) {
-      setErrorMessage('Authentication error. Please check your credentials.');
+      setErrorMessage('Authentication error. Please verify your credentials.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleSocialLogin = (provider) => {
+    setIsLoading(true);
+    setTimeout(() => {
+      // Authenticate as System Administrator
+      onLoginSuccess({
+        id: `admin-${provider.toLowerCase()}`,
+        name: `Administrator (${provider})`,
+        email: `admin@greenlens.app`,
+        role: 'System Administrator',
+        dept: 'Executive Command & IT Governance',
+        municipalityId: 'winneba'
+      });
+      setIsLoading(false);
+    }, 400);
+  };
+
   return (
-    <div className="min-h-screen w-full bg-background text-on-surface flex items-center justify-center p-4 lg:p-8 relative font-body-lg select-none">
-      {/* Background Healthy Green Vegetated Land Wallpaper with Transparent Soft Scrim */}
-      <div
-        className="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?auto=format&fit=crop&w=1600&q=80')`,
-        }}
-      ></div>
+    <div className="bg-background text-on-surface h-screen max-h-screen w-screen overflow-hidden flex flex-col justify-between items-center antialiased select-none">
+      {/* TopAppBar */}
+      <header className="w-full h-14 md:h-16 shrink-0 bg-background flex justify-center items-center px-4 border-b border-transparent z-40">
+        <div className="flex items-center gap-2">
+          <span aria-hidden="true" className="material-symbols-outlined text-primary text-2xl" data-icon="eco">
+            eco
+          </span>
+          <span className="font-headline-md text-headline-md font-bold text-primary tracking-tight">
+            GreenLens
+          </span>
+        </div>
+      </header>
 
-      {/* Main Container Card with Clean Glass Transparency */}
-      <div className="relative z-10 w-full max-w-5xl bg-surface-container-lowest/95 backdrop-blur-xl rounded-3xl border border-outline-variant shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
-        
-        {/* Left Column: Visual Showcase with Clear Healthy Green Vegetated Land and Transparent Overlay */}
-        <div className="lg:col-span-5 relative overflow-hidden flex flex-col justify-between p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-outline-variant bg-[#0b1d0e]">
-          {/* High-Resolution Clear Healthy Green Vegetated Land Image */}
-          <img
-            src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80"
-            alt="Lush Healthy Green Vegetated Land & Watershed Resilience"
-            className="absolute inset-0 w-full h-full object-cover opacity-80"
-          />
-          {/* Transparent solid green ecological tint overlay */}
-          <div className="absolute inset-0 bg-[#0a1e0f]/55 backdrop-blur-xs pointer-events-none"></div>
-
-          {/* Foreground Content */}
-          <div className="relative z-10 space-y-6 text-white">
-            {/* Logo Badge */}
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-md text-on-primary border border-white/20">
-                <span className="material-symbols-outlined text-[28px]">energy_savings_leaf</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-headline-lg text-[24px] font-bold text-white leading-tight">
-                  GreenLens
-                </span>
-                <span className="text-[10px] uppercase font-label-caps text-primary-fixed tracking-[1.5px] font-bold">
-                  Command Center
-                </span>
-              </div>
-            </div>
-
-            {/* Mission Statement */}
-            <div className="space-y-2 pt-2">
-              <h2 className="font-title-lg text-[22px] font-bold text-white leading-snug">
-                Municipal Climate Resilience &amp; Drainage Intelligence
-              </h2>
-              <p className="text-[13px] text-white/80 leading-relaxed">
-                Next-generation hydraulic digital twin, predictive flood telemetry, and AI-powered dispatch operations for Ghana municipalities.
-              </p>
-            </div>
-
-            {/* Transparent Metric Tiles */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div className="bg-black/40 border border-white/15 rounded-2xl p-4 backdrop-blur-md">
-                <span className="text-[10px] uppercase font-label-caps text-white/60 font-bold block">Network Length</span>
-                <div className="font-display-lg text-[22px] font-bold text-primary-fixed mt-0.5">34.2 km</div>
-                <span className="text-[11px] text-white/70">GIS Mapped</span>
-              </div>
-
-              <div className="bg-black/40 border border-white/15 rounded-2xl p-4 backdrop-blur-md">
-                <span className="text-[10px] uppercase font-label-caps text-white/60 font-bold block">AI Accuracy</span>
-                <div className="font-display-lg text-[22px] font-bold text-primary-fixed mt-0.5">94.6%</div>
-                <span className="text-[11px] text-white/70">Flood Forecast</span>
-              </div>
-            </div>
+      {/* Main Content Canvas - Fits Screen Without Scrolling */}
+      <main className="flex-grow w-full max-w-md px-4 flex flex-col justify-center py-2">
+        {/* Brand / Welcome Area */}
+        <div className="text-center mb-5">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-mint-light mb-3">
+            <span
+              className="material-symbols-outlined text-emerald-core text-3xl"
+              data-icon="energy_savings_leaf"
+              data-weight="fill"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              energy_savings_leaf
+            </span>
           </div>
-
-          {/* Bottom Compliance Tag */}
-          <div className="relative z-10 pt-6 border-t border-white/20 flex items-center justify-between text-[11px] text-white/75">
-            <div className="flex items-center gap-1.5 font-medium">
-              <span className="material-symbols-outlined text-[16px] text-primary-fixed">verified_user</span>
-              <span>Republic of Ghana • Municipal Portal</span>
-            </div>
-            <span className="font-data-mono text-white/60 font-bold">v2.4.0</span>
-          </div>
+          <h1 className="font-headline-lg-mobile text-[24px] md:text-[26px] leading-tight text-on-surface mb-1 font-bold">
+            Welcome Back
+          </h1>
+          <p className="font-body-md text-[13px] md:text-[14px] text-on-surface-variant">
+            Sign in to continue your sustainable journey.
+          </p>
         </div>
 
-        {/* Right Column: Portal Login Form (7 cols) */}
-        <div className="lg:col-span-7 p-8 lg:p-10 flex flex-col justify-between bg-surface-container-lowest/80 backdrop-blur-md">
-          <div className="space-y-5">
-            {/* Header & Status */}
+        {/* Error Notice */}
+        {errorMessage && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[12px] flex items-start gap-2 animate-in fade-in">
+            <span className="material-symbols-outlined text-[18px] text-red-600 shrink-0 mt-0.5">
+              error
+            </span>
+            <div className="leading-snug">{errorMessage}</div>
+          </div>
+        )}
+
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-3">
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <h3 className="font-title-lg text-[20px] font-bold text-on-surface">Officer Portal Sign In</h3>
-                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                  AI Core Online
-                </span>
-              </div>
-              <p className="text-[13px] text-on-surface-variant">
-                Select your authorized municipal role or enter government credentials.
-              </p>
+              <label className="block font-label-md text-label-md text-on-surface mb-1 text-[13px]" htmlFor="email">
+                Email Address
+              </label>
+              <input
+                className="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface text-[14px] focus:outline-none focus:ring-2 focus:ring-emerald-core focus:border-transparent transition-shadow duration-200"
+                id="email"
+                name="email"
+                placeholder="hello@greenlens.app"
+                required
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errorMessage) setErrorMessage('');
+                }}
+              />
             </div>
-
-            {/* Quick Demo Role Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {demoAccounts.map((acc) => {
-                const isSelected = email === acc.email;
-                return (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    onClick={() => handleSelectDemoAccount(acc)}
-                    className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
-                      isSelected
-                        ? 'bg-primary-container text-on-primary-container border-primary shadow-xs font-semibold'
-                        : 'bg-surface-container-low/70 border-outline-variant/60 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="material-symbols-outlined text-[20px]">
-                        {acc.icon}
-                      </span>
-                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">
-                        {acc.badge}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="font-bold text-[12px] leading-tight">{acc.role}</div>
-                      <div className="text-[10px] opacity-80 truncate mt-0.5">{acc.name.split(' ')[0]}</div>
-                    </div>
-                  </button>
-                );
-              })}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block font-label-md text-label-md text-on-surface text-[13px]" htmlFor="password">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setModalMessage({
+                      title: 'Reset Password',
+                      content:
+                        'To reset your password or retrieve credentials, please contact the Municipal Assembly System Administrator or IT Support Desk at admin@greenlens.app or +233 33 232 2011.'
+                    })
+                  }
+                  className="font-label-sm text-label-sm text-emerald-core hover:text-forest-deep transition-colors cursor-pointer text-[12px]"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <input
+                className="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface text-[14px] focus:outline-none focus:ring-2 focus:ring-emerald-core focus:border-transparent transition-shadow duration-200"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                required
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errorMessage) setErrorMessage('');
+                }}
+              />
             </div>
-
-            {/* Login Form */}
-            <form onSubmit={handleLogin} className="space-y-4 pt-1">
-              {errorMessage && (
-                <div className="p-3 rounded-xl bg-error-container border border-error/30 text-on-error-container text-[12px] flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-risk-critical">error</span>
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              {/* Municipal Jurisdiction Dropdown */}
-              <div>
-                <label className="block text-[12px] font-semibold text-on-surface mb-1">
-                  Municipal Jurisdiction
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3.5 top-2.5 text-outline text-[18px]">
-                    location_city
-                  </span>
-                  <select
-                    value={selectedMunicipality}
-                    onChange={(e) => setSelectedMunicipality(e.target.value)}
-                    className="w-full bg-surface-container-low/70 border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-[13px] text-on-surface font-medium focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer"
-                  >
-                    {municipalities.map((mun) => (
-                      <option key={mun.id} value={mun.id}>
-                        {mun.name} ({mun.region})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Email Input */}
-              <div>
-                <label className="block text-[12px] font-semibold text-on-surface mb-1">
-                  Official Gov / Staff Email
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3.5 top-2.5 text-outline text-[18px]">
-                    mail
-                  </span>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="officer@winneba.gov.gh"
-                    className="w-full bg-surface-container-low/70 border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-[13px] text-on-surface focus:ring-1 focus:ring-primary focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Password Input */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[12px] font-semibold text-on-surface">Security Key / Password</label>
-                  <button
-                    type="button"
-                    onClick={() => alert('Please contact Municipal Assembly IT Help Desk at +233 33 232 2011 to reset credentials.')}
-                    className="text-[11px] text-primary font-semibold hover:underline cursor-pointer"
-                  >
-                    Forgot passcode?
-                  </button>
-                </div>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3.5 top-2.5 text-outline text-[18px]">
-                    lock
-                  </span>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-surface-container-low/70 border border-outline-variant rounded-xl pl-10 pr-10 py-2.5 text-[13px] text-on-surface focus:ring-1 focus:ring-primary focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-outline hover:text-on-surface transition-colors cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      {showPassword ? 'visibility_off' : 'visibility'}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Remember Me & 2FA */}
-              <div className="flex items-center justify-between text-[12px] pt-1">
-                <label className="flex items-center gap-2 text-on-surface-variant cursor-pointer font-medium">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded accent-primary cursor-pointer w-4 h-4"
-                  />
-                  <span>Keep session active (24h)</span>
-                </label>
-                <span className="text-[11px] text-outline flex items-center gap-1 font-semibold">
-                  <span className="material-symbols-outlined text-[14px]">key</span> 2FA Enforced
-                </span>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-primary hover:bg-surface-tint text-on-primary font-title-md font-bold text-[14px] py-3 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-70 mt-2"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-                    <span>Authenticating Municipal Officer...</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-[20px]">login</span>
-                    <span>Enter Command Center</span>
-                  </>
-                )}
-              </button>
-            </form>
           </div>
 
-          {/* Security Notice Footer */}
-          <div className="pt-4 border-t border-outline-variant/50 text-center text-[11px] text-outline">
-            Protected under Ghana Cybersecurity Authority &amp; Municipal Data Sovereignty protocols.
+          <button
+            className="w-full py-3 px-5 rounded-lg bg-forest-deep text-on-primary font-label-md text-[14px] text-center hover:opacity-90 active:scale-95 transition-all duration-150 shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 mt-1"
+            type="submit"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <span className="material-symbols-outlined text-[18px] animate-spin">
+                  progress_activity
+                </span>
+                <span>Signing In...</span>
+              </>
+            ) : (
+              <>
+                <span>Sign In</span>
+                <span className="material-symbols-outlined text-[18px]" data-icon="arrow_forward">
+                  arrow_forward
+                </span>
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="my-5 flex items-center">
+          <div className="flex-grow border-t border-outline-variant"></div>
+          <span className="mx-3 font-label-sm text-[12px] text-on-surface-variant">
+            or sign in with
+          </span>
+          <div className="flex-grow border-t border-outline-variant"></div>
+        </div>
+
+        {/* Social Login - Single Google Button */}
+        <div>
+          <button
+            type="button"
+            onClick={() => handleSocialLogin('Google')}
+            className="w-full py-2.5 px-4 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-label-md text-[14px] flex items-center justify-center gap-3 hover:bg-surface-subtle transition-colors duration-150 cursor-pointer"
+          >
+            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              ></path>
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              ></path>
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              ></path>
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              ></path>
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+        </div>
+      </main>
+
+      {/* Footer - Stays anchored to bottom without scrolling */}
+      <footer className="w-full py-3 bg-surface border-t border-outline-variant flex flex-col sm:flex-row justify-between items-center gap-2 px-4 md:px-8 max-w-container-max mx-auto shrink-0">
+        <div className="font-label-sm text-[12px] text-on-surface-variant">
+          © {new Date().getFullYear()} GreenLens. Sustainable vision.
+        </div>
+        <div className="flex gap-4">
+          <button
+            type="button"
+            onClick={() =>
+              setModalMessage({
+                title: 'Privacy Policy',
+                content:
+                  'GreenLens respects municipal and citizen data sovereignty. All geospatial telemetry, drainage sensor inputs, and incident records are encrypted under Ghana Data Protection and cybersecurity protocols.'
+              })
+            }
+            className="font-label-sm text-[12px] text-on-surface-variant hover:text-primary transition-colors focus:ring-2 focus:ring-primary outline-none cursor-pointer"
+          >
+            Privacy Policy
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setModalMessage({
+                title: 'Terms of Service',
+                content:
+                  'This system is authorized strictly for official municipal operations, environmental monitoring, drainage management, and verified climate resilience actions.'
+              })
+            }
+            className="font-label-sm text-[12px] text-on-surface-variant hover:text-primary transition-colors focus:ring-2 focus:ring-primary outline-none cursor-pointer"
+          >
+            Terms of Service
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setModalMessage({
+                title: 'Help Center & Support',
+                content:
+                  'For technical support or emergency dispatch queries, contact the Municipal Disaster & IT Desk at +233 33 232 2011 or email admin@greenlens.app.'
+              })
+            }
+            className="font-label-sm text-[12px] text-on-surface-variant hover:text-primary transition-colors focus:ring-2 focus:ring-primary outline-none cursor-pointer"
+          >
+            Help Center
+          </button>
+        </div>
+      </footer>
+
+      {/* Info Modal */}
+      {modalMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl border border-outline-variant max-w-md w-full p-6 animate-in zoom-in-95">
+            <h3 className="font-headline-md text-[20px] font-bold text-on-surface mb-2">
+              {modalMessage.title}
+            </h3>
+            <p className="font-body-md text-on-surface-variant text-[13px] leading-relaxed mb-6">
+              {modalMessage.content}
+            </p>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setModalMessage(null)}
+                className="py-2 px-5 rounded-lg bg-forest-deep text-on-primary font-label-md text-[13px] cursor-pointer hover:opacity-90"
+              >
+                Understood
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

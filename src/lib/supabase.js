@@ -713,8 +713,37 @@ export const dataService = {
     return { id, timestamp: timestampStr, user, action, entity, details };
   },
 
-  // Fetch Users (both command staff and citizen mobile app users)
+  // Fetch Users (seeded admin accounts, admin-created system users, and citizen accounts)
   async getUsers(municipalityId = 'winneba') {
+    let localCreated = [];
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('greenlens_created_users') : null;
+      if (stored) localCreated = JSON.parse(stored);
+    } catch {}
+
+    const defaultSeed = [
+      {
+        id: 'admin-01',
+        name: 'System Administrator',
+        email: 'admin@greenlens.app',
+        phone: '+233 33 232 2011',
+        role: 'System Administrator',
+        department: 'Municipal Command & IT Governance',
+        status: 'Active',
+        municipalityId: 'winneba'
+      },
+      {
+        id: 'admin-02',
+        name: 'Dr. Joseph Ansah (SysAdmin)',
+        email: 'admin@winneba.gov.gh',
+        phone: '+233 33 232 2012',
+        role: 'System Administrator',
+        department: 'Municipal Assembly IT & Security',
+        status: 'Active',
+        municipalityId: 'winneba'
+      }
+    ];
+
     if (isSupabaseConfigured && supabase) {
       try {
         const [sysRes, authRes] = await Promise.all([
@@ -747,30 +776,47 @@ export const dataService = {
           };
         });
 
-        const existingEmails = new Set(systemUsers.map(u => u.email?.toLowerCase()));
+        const existingEmails = new Set([...systemUsers.map(u => u.email?.toLowerCase()), ...defaultSeed.map(u => u.email?.toLowerCase())]);
         const uniqueCitizenUsers = citizenAuthUsers.filter(u => u.email && !existingEmails.has(u.email.toLowerCase()));
+        const uniqueLocalUsers = localCreated.filter(u => u.email && !existingEmails.has(u.email.toLowerCase()));
 
-        const allUsers = [...systemUsers, ...uniqueCitizenUsers];
-        if (allUsers.length > 0) return allUsers;
+        return [...defaultSeed, ...systemUsers, ...uniqueLocalUsers, ...uniqueCitizenUsers];
       } catch (err) {
         console.error('Supabase getUsers error:', err);
       }
     }
-    return [];
+
+    const existingEmails = new Set(defaultSeed.map(u => u.email?.toLowerCase()));
+    const uniqueLocal = localCreated.filter(u => u.email && !existingEmails.has(u.email.toLowerCase()));
+    return [...defaultSeed, ...uniqueLocal];
   },
 
-  // Create/Invite User
+  // Create/Invite User by Admin
   async createUser(userData) {
     const id = userData.id || `usr-${Date.now()}`;
     const payload = {
       id,
       name: userData.name,
       email: userData.email,
+      phone: userData.phone || '+233 24 000 0000',
       role: userData.role || 'Municipal Officer',
       department: userData.department || 'Operations Command',
       status: userData.status || 'Active',
+      municipalityId: userData.municipalityId || 'winneba',
       municipality_id: userData.municipalityId || 'winneba'
     };
+
+    // Save to localStorage for instant local persistence
+    try {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('greenlens_created_users');
+        const existing = stored ? JSON.parse(stored) : [];
+        const updated = [payload, ...existing.filter(u => u.email?.toLowerCase() !== payload.email?.toLowerCase())];
+        localStorage.setItem('greenlens_created_users', JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -779,14 +825,21 @@ export const dataService = {
           await this.addAuditLog({
             action: 'USER_INVITED',
             entity: `User ${userData.name}`,
-            details: `Invited user ${userData.email} as ${userData.role}.`
+            details: `Admin provisioned user ${userData.email} with role ${userData.role}.`
           });
-          return data[0];
+          return { ...data[0], municipalityId: data[0].municipality_id || userData.municipalityId };
         }
       } catch (err) {
         console.error('Supabase createUser error:', err);
       }
     }
+
+    await this.addAuditLog({
+      action: 'USER_INVITED',
+      entity: `User ${userData.name}`,
+      details: `Admin provisioned user ${userData.email} with role ${userData.role}.`
+    });
+
     return payload;
   },
 

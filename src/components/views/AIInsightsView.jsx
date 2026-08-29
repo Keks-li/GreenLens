@@ -27,7 +27,7 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
   };
 
   return (
-    <div className="px-8 py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
+    <div className="px-4 sm:px-8 py-4 sm:py-6 w-full max-w-[1440px] mx-auto space-y-6 select-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

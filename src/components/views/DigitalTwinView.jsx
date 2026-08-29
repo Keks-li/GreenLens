@@ -90,16 +90,16 @@ export default function DigitalTwinView({
       {!isPanelOpen && (
         <button
           onClick={() => setIsPanelOpen(true)}
-          className="absolute top-6 right-6 z-20 bg-surface/95 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-lg border border-outline-variant/60 flex items-center gap-2 text-primary font-bold text-[13px] hover:bg-surface-container transition-all"
+          className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20 bg-surface/95 backdrop-blur-md px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-lg border border-outline-variant/60 flex items-center gap-2 text-primary font-bold text-[12px] sm:text-[13px] hover:bg-surface-container transition-all"
         >
           <span className="material-symbols-outlined text-[18px]">dock_to_left</span>
-          Open Telemetry Panel ({currentNode.id})
+          Open Telemetry ({currentNode.id})
         </button>
       )}
 
       {/* Active Side Panel (Right) */}
       <div
-        className={`absolute top-6 right-6 bottom-6 w-[400px] bg-surface/95 backdrop-blur-xl shadow-2xl rounded-2xl flex flex-col overflow-hidden z-30 transform transition-transform duration-300 border border-outline-variant/60 ${
+        className={`absolute top-3 sm:top-6 right-3 sm:right-6 bottom-3 sm:bottom-6 w-[calc(100vw-24px)] sm:w-[400px] max-w-[400px] bg-surface/95 backdrop-blur-xl shadow-2xl rounded-2xl flex flex-col overflow-hidden z-30 transform transition-transform duration-300 border border-outline-variant/60 ${
           isPanelOpen ? 'translate-x-0' : 'translate-x-[120%] pointer-events-none'
         }`}
       >

@@ -6,7 +6,7 @@ export default function AIPriorityView({
   onViewDetails
 }) {
   return (
-    <div className="px-8 py-6 w-full max-w-[1440px] mx-auto">
+    <div className="px-4 sm:px-8 py-4 sm:py-6 w-full max-w-[1440px] mx-auto">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
           <span className="material-symbols-outlined text-primary text-[24px] animate-pulse">

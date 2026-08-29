@@ -54,7 +54,7 @@ export default function FloodRiskView({
   return (
     <div className="flex flex-col w-full select-none">
       {/* Top Open-Meteo & Supabase Status Banner */}
-      <div className="px-8 py-5 mb-6 bg-surface-container-low/80 backdrop-blur-md shadow-xs flex flex-col md:flex-row md:items-center justify-between z-10 relative mt-4 mx-8 rounded-2xl border border-outline-variant/60 gap-4">
+      <div className="px-4 sm:px-8 py-4 sm:py-5 mb-6 bg-surface-container-low/80 backdrop-blur-md shadow-xs flex flex-col md:flex-row md:items-center justify-between z-10 relative mt-4 mx-3 sm:mx-8 rounded-2xl border border-outline-variant/60 gap-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="font-label-caps text-on-surface-variant uppercase tracking-wider text-[11px] font-bold">
@@ -62,14 +62,14 @@ export default function FloodRiskView({
             </span>
             <span className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 font-data-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-              Live API: open-meteo.com
+              Live API
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="font-headline-lg text-risk-high tracking-tight font-bold text-[24px]">
-              Municipal Flood Risk Index: {compoundAnalysis.municipalRiskIndex}/100
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <span className="font-headline-lg text-risk-high tracking-tight font-bold text-[20px] sm:text-[24px]">
+              Municipal Flood Risk: {compoundAnalysis.municipalRiskIndex}/100
             </span>
-            <div className="px-2.5 py-1 rounded-lg bg-risk-high/10 border border-risk-high/25 flex items-center gap-1.5 shadow-2xs">
+            <div className="px-2.5 py-1 rounded-lg bg-risk-high/10 border border-risk-high/25 flex items-center gap-1.5 shadow-2xs self-start sm:self-auto">
               <span className="material-symbols-outlined text-[15px] text-risk-high animate-bounce">
                 warning
               </span>
@@ -80,17 +80,17 @@ export default function FloodRiskView({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-6 items-center">
+        <div className="flex flex-wrap gap-4 sm:gap-6 items-center">
           <div className="flex flex-col items-start md:items-end">
             <span className="font-label-caps text-on-surface-variant uppercase text-[11px] font-bold">Open-Meteo 24h Rain</span>
-            <span className="font-title-lg text-on-surface font-bold font-data-mono text-[17px] text-risk-critical">
+            <span className="font-title-lg text-on-surface font-bold font-data-mono text-[16px] sm:text-[17px] text-risk-critical">
               {rain24h} mm ({rainProb} Prob)
             </span>
           </div>
           <div className="h-8 w-[1px] bg-outline-variant/60 hidden md:block"></div>
           <div className="flex flex-col items-start md:items-end">
             <span className="font-label-caps text-on-surface-variant uppercase text-[11px] font-bold">Current Weather</span>
-            <span className="font-title-lg text-primary font-bold flex items-center gap-1.5 text-[15px]">
+            <span className="font-title-lg text-primary font-bold flex items-center gap-1.5 text-[14px] sm:text-[15px]">
               <span className="material-symbols-outlined text-[18px]">rainy</span>
               {currentTemp} • {currentCondition}
             </span>
@@ -99,7 +99,7 @@ export default function FloodRiskView({
       </div>
 
       {/* Main Grid */}
-      <div className="px-8 grid grid-cols-1 xl:grid-cols-12 gap-6 pb-12">
+      <div className="px-3 sm:px-8 grid grid-cols-1 xl:grid-cols-12 gap-6 pb-12">
         {/* Left Column (8 cols) */}
         <div className="xl:col-span-8 flex flex-col gap-6">
           {/* Card 1: Open-Meteo Rainfall & Surcharge Hydrograph */}

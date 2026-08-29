@@ -6,7 +6,9 @@ export default function Sidebar({
   setCurrentView,
   selectedMunicipality,
   currentUser,
-  onLogout
+  onLogout,
+  isMobileOpen = false,
+  onCloseMobile
 }) {
   const userRole = currentUser?.role || 'Municipal Officer';
   const roleInfo = getPermissionsForRole(userRole);
@@ -60,23 +62,40 @@ export default function Sidebar({
     }))
     .filter((section) => section.items.length > 0);
 
-  return (
-    <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-low border-r border-outline-variant z-50 flex flex-col overflow-y-auto select-none">
+  const handleSelectNav = (viewId) => {
+    setCurrentView(viewId);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full bg-surface-container-low select-none">
       {/* Brand Header */}
-      <div className="p-6 flex items-center gap-3 border-b border-outline-variant mb-2">
-        <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-xs">
-          <span className="material-symbols-outlined text-primary text-[24px]">energy_savings_leaf</span>
+      <div className="p-5 sm:p-6 flex items-center justify-between border-b border-outline-variant mb-2">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-xs">
+            <span className="material-symbols-outlined text-primary text-[24px]">energy_savings_leaf</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-title-md text-primary leading-tight font-bold tracking-tight">GreenLens</span>
+            <span className="text-[10px] uppercase font-label-caps text-on-surface-variant tracking-[1px]">
+              Command Center
+            </span>
+          </div>
         </div>
-        <div className="flex flex-col">
-          <span className="font-title-md text-primary leading-tight font-bold tracking-tight">GreenLens</span>
-          <span className="text-[10px] uppercase font-label-caps text-on-surface-variant tracking-[1px]">
-            Command Center
-          </span>
-        </div>
+
+        {/* Mobile close button */}
+        <button
+          onClick={onCloseMobile}
+          className="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container lg:hidden"
+        >
+          <span className="material-symbols-outlined text-[20px]">close</span>
+        </button>
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 px-4 flex flex-col gap-1 pb-4">
+      <nav className="flex-1 px-4 flex flex-col gap-1 pb-4 overflow-y-auto">
         {navSections.map((section) => (
           <div key={section.title} className="flex flex-col">
             <div className="text-label-caps text-outline uppercase px-4 py-2 mt-3 tracking-wider text-[11px]">
@@ -87,7 +106,7 @@ export default function Sidebar({
               return (
                 <button
                   key={item.id}
-                  onClick={() => setCurrentView(item.id)}
+                  onClick={() => handleSelectNav(item.id)}
                   className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all text-left gap-3 ${
                     isActive
                       ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm'
@@ -155,6 +174,31 @@ export default function Sidebar({
           </button>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-72 border-r border-outline-variant z-50 flex-col overflow-y-auto">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Drawer Backdrop & Slide-Over */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop */}
+          <div
+            onClick={onCloseMobile}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+          />
+
+          {/* Drawer container */}
+          <div className="relative w-72 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

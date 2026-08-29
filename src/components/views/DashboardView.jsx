@@ -40,7 +40,7 @@ export default function DashboardView({
 
   return (
     <div className="flex flex-col w-full">
-      <div className="px-8 py-6 w-full max-w-[1440px] mx-auto">
+      <div className="px-4 sm:px-8 py-4 sm:py-6 w-full max-w-[1440px] mx-auto">
         {/* Welcome Header */}
         <div className="mb-8 select-none">
           <h1 className="font-headline-lg text-on-surface mb-2">
