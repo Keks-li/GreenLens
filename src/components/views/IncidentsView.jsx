@@ -260,14 +260,15 @@ export default function IncidentsView({
                   {inc.title}
                 </h3>
 
-                {/* Refuse Material Tag */}
+                {/* Refuse Material & Weight Quantity Tag */}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-primary-container text-on-primary-container border border-[#bbf7d0]">
                     🗑️ {inc.refuseType || inc.category || 'Refuse Material'}
                   </span>
-                  {inc.estimatedWasteVolume && (
-                    <span className="text-[10px] font-data-mono text-outline font-semibold bg-surface-container px-2 py-0.5 rounded-full">
-                      {inc.estimatedWasteVolume}
+                  {(inc.weightQuantityFormatted || inc.weight_quantity || inc.estimatedWasteVolume) && (
+                    <span className="text-[10.5px] font-data-mono font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300/80 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                      <span className="material-symbols-outlined text-[13px] text-emerald-700">scale</span>
+                      <span>{inc.weightQuantityFormatted || (inc.weight_quantity ? `${inc.weight_quantity} kg` : inc.estimatedWasteVolume)}</span>
                     </span>
                   )}
                 </div>

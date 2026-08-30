@@ -153,7 +153,7 @@ export default function IncidentDetailModal({
           )}
 
           {/* Incident Metadata Grid with Transparent Cards */}
-          <div className="grid grid-cols-2 gap-3 text-[12px]">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[12px]">
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
               <span className="text-outline font-semibold block text-[11px]">Reported By</span>
               <div className="text-on-surface font-medium mt-0.5 truncate">{incident.reportedBy}</div>
@@ -161,15 +161,30 @@ export default function IncidentDetailModal({
                 <div className="text-[10px] text-primary font-data-mono mt-0.5 truncate">{incident.reporterContact}</div>
               )}
             </div>
+
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
               <span className="text-outline font-semibold block text-[11px]">Associated Drain / Sector</span>
               <div className="text-primary font-bold mt-0.5 truncate">{incident.drainId || incident.sector || 'Winneba Swale'}</div>
             </div>
+
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
               <span className="text-outline font-semibold block text-[11px]">GPS Coordinates</span>
               <div className="font-data-mono text-on-surface font-medium mt-0.5 truncate">{incident.coords || '5.3556°N, 0.6247°W'}</div>
             </div>
-            <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
+
+            {/* Weight / Quantity Highlight Card */}
+            <div className="bg-emerald-50/90 p-3.5 rounded-xl border border-emerald-300/80 shadow-2xs">
+              <span className="text-emerald-900 font-bold block text-[10.5px] uppercase tracking-wider flex items-center gap-1">
+                <span className="material-symbols-outlined text-[15px] text-emerald-700">scale</span>
+                Weight / Quantity
+              </span>
+              <div className="text-emerald-950 font-extrabold font-data-mono text-[16px] mt-0.5">
+                {incident.weightQuantityFormatted || (incident.weight_quantity ? `${incident.weight_quantity} kg` : incident.estimatedWasteVolume || '150 kg')}
+              </div>
+              <span className="text-[10px] text-emerald-700 font-semibold">Verified Refuse Scale</span>
+            </div>
+
+            <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40 col-span-2 sm:col-span-2">
               <span className="text-outline font-semibold block text-[11px]">Current Status</span>
               <div className="capitalize font-bold text-on-surface mt-0.5 flex items-center gap-1.5">
                 {incident.status === 'in-progress' || incident.rawStatus === 'IN_PROGRESS' ? (

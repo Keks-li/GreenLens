@@ -72,14 +72,22 @@ export default function App() {
     const resolvedCount = (incidents || []).filter(
       (i) => i.status === 'resolved' || i.rawStatus === 'RESOLVED' || i.rawStatus === 'CLOSED'
     ).length;
+    const totalIncidentKg = (incidents || []).reduce((sum, i) => {
+      const w = Number(
+        i.weight_quantity ||
+        i.weightQuantity ||
+        (parseFloat(String(i.estimatedWasteVolume || '').replace(/[^\d.]/g, '')) || 0)
+      );
+      return sum + (isNaN(w) ? 0 : w);
+    }, 0);
     const totalKgCleared = (citizenRewards || []).reduce(
-      (sum, r) => sum + Number(r.refuse_kg_cleared || r.refuseKgCleared || 0),
+      (sum, r) => sum + Number(r.refuse_kg_cleared || r.refuseKgCleared || r.weight_quantity || 0),
       0
-    );
+    ) + (totalIncidentKg > 0 ? totalIncidentKg * 0.6 : 0);
     const wasteTons =
       totalKgCleared > 0
         ? (totalKgCleared / 1000).toFixed(1)
-        : ((resolvedCount * 120 + 240) / 1000).toFixed(1);
+        : (((resolvedCount * 120 + 240) / 1000)).toFixed(1);
 
     return {
       reportsToday: {

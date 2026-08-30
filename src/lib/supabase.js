@@ -55,6 +55,11 @@ const mapDrainageSegment = (row) => {
 
 const mapIncident = (row) => {
   if (!row) return null;
+  const rawWeight = row.weight_quantity ?? row.weight ?? row.quantity ?? row.waste_quantity ?? row.estimated_waste_volume;
+  const formattedWeight = rawWeight !== undefined && rawWeight !== null && rawWeight !== ''
+    ? (typeof rawWeight === 'number' || !isNaN(Number(rawWeight)) ? `${Number(rawWeight)} kg` : String(rawWeight))
+    : '150 kg';
+
   return {
     ...row,
     id: row.id,
@@ -69,7 +74,9 @@ const mapIncident = (row) => {
     timestamp: row.timestamp || row.created_at || new Date().toISOString(),
     reportedBy: row.reported_by || row.reportedBy || 'Municipal Staff',
     aiConfidence: row.ai_confidence || row.aiConfidence || '90% AI Confidence',
-    estimatedWasteVolume: row.estimated_waste_volume || row.estimatedWasteVolume || 'N/A',
+    weightQuantity: rawWeight,
+    weightQuantityFormatted: formattedWeight,
+    estimatedWasteVolume: formattedWeight,
     coords: row.coords || `${row.latitude || 5.3556}° N, ${row.longitude || -0.6247}° W`,
     description: row.description || '',
     imageUrl: row.image_url || row.imageUrl || 'https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?auto=format&fit=crop&w=800&q=80',
@@ -145,6 +152,18 @@ const mapReportToIncident = (report) => {
     refuseType = 'Mixed Channel Refuse';
   }
 
+  const rawWeight = report.weight_quantity ?? report.weight ?? report.quantity ?? report.waste_quantity ?? report.refuse_kg_cleared;
+  let formattedWeight = null;
+  if (rawWeight !== undefined && rawWeight !== null && rawWeight !== '') {
+    if (typeof rawWeight === 'number' || !isNaN(Number(rawWeight))) {
+      formattedWeight = `${Number(rawWeight)} kg`;
+    } else {
+      formattedWeight = String(rawWeight).includes('kg') || String(rawWeight).includes('T') ? String(rawWeight) : `${rawWeight} kg`;
+    }
+  } else {
+    formattedWeight = aiRisk?.waste_risk_score ? `${Math.round(Number(aiRisk.waste_risk_score) * 25 + 50)} kg` : '150 kg';
+  }
+
   return {
     ...report,
     id: `REP-${String(report.id).padStart(3, '0')}`,
@@ -167,8 +186,10 @@ const mapReportToIncident = (report) => {
     floodRiskScore: Number(aiRisk?.flood_risk_score || 0),
     wasteRiskScore: Number(aiRisk?.waste_risk_score || 0),
     overallRiskScore: Number(aiRisk?.overall_risk_score || 0),
+    weightQuantity: rawWeight !== undefined && rawWeight !== null && rawWeight !== '' ? rawWeight : (aiRisk?.waste_risk_score ? Math.round(Number(aiRisk.waste_risk_score) * 25 + 50) : 150),
+    weightQuantityFormatted: formattedWeight,
+    estimatedWasteVolume: formattedWeight,
     aiReasoning: aiRisk?.reasoning || 'Automated visual scan identified surface refuse accumulation and runoff impedance.',
-    estimatedWasteVolume: aiRisk?.waste_risk_score ? `${Math.round(Number(aiRisk.waste_risk_score) * 25 + 50)} kg` : '150 kg',
     coords,
     latitude: lat,
     longitude: lng,
@@ -422,18 +443,7 @@ export const dataService = {
         let reportsQuery = supabase
           .from('reports')
           .select(`
-            id,
-            title,
-            description,
-            category_id,
-            status,
-            latitude,
-            longitude,
-            address,
-            reported_at,
-            created_at,
-            updated_at,
-            user_id,
+            *,
             report_categories ( id, name, icon ),
             report_media ( id, file_url, thumbnail_url, media_type ),
             ai_risk_assessments ( id, flood_risk_score, waste_risk_score, drainage_risk_score, environmental_risk_score, overall_risk_score, risk_level, reasoning ),

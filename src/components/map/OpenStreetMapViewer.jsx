@@ -635,6 +635,7 @@ export default function OpenStreetMapViewer({
             <div><strong>Sector / Address:</strong> ${item.sector || item.address || 'Winneba Catchment'}</div>
             <div><strong>GPS:</strong> <span style="font-family: monospace;">${lat.toFixed(4)}°N, ${Math.abs(lng).toFixed(4)}°W</span></div>
             ${item.refuseType ? `<div><strong>Refuse Type:</strong> ${item.refuseType}</div>` : ''}
+            ${(item.weightQuantityFormatted || item.weight_quantity || item.estimatedWasteVolume) ? `<div><strong>Refuse Weight / Quantity:</strong> <span style="font-family: monospace; font-weight: bold; color: #206d1f;">${item.weightQuantityFormatted || (item.weight_quantity ? `${item.weight_quantity} kg` : item.estimatedWasteVolume)}</span></div>` : ''}
             ${item.reportedBy ? `<div><strong>Reported By:</strong> ${item.reportedBy}</div>` : ''}
           </div>
 
