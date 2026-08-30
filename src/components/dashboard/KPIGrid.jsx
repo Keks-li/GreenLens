@@ -12,7 +12,7 @@ export default function KPIGrid({ kpis, onCardClick }) {
       >
         <div className="absolute -right-4 -top-4 w-14 h-14 bg-primary/10 rounded-full blur-lg group-hover:bg-primary/20 transition-colors"></div>
         <div className="flex justify-between items-start mb-2 sm:mb-3">
-          <span className="font-label-caps text-on-surface-variant uppercase tracking-wider text-[10px] font-bold truncate">Reports Today</span>
+          <span className="font-label-caps text-on-surface-variant uppercase tracking-wider text-[10px] font-bold truncate">Total Reports Logged</span>
           <div className="w-7 h-7 rounded-xl bg-primary-container flex items-center justify-center text-primary">
             <span className="material-symbols-outlined text-[16px]">assignment</span>
           </div>
@@ -95,7 +95,7 @@ export default function KPIGrid({ kpis, onCardClick }) {
       >
         <div className="absolute -right-4 -top-4 w-14 h-14 bg-primary/10 rounded-full blur-lg group-hover:bg-primary/20 transition-colors"></div>
         <div className="flex justify-between items-start mb-2 sm:mb-3">
-          <span className="font-label-caps text-on-surface-variant uppercase tracking-wider text-[10px] font-bold truncate">Resolved Today</span>
+          <span className="font-label-caps text-on-surface-variant uppercase tracking-wider text-[10px] font-bold truncate">Resolved Incidents</span>
           <div className="w-7 h-7 rounded-xl bg-primary-container flex items-center justify-center text-primary">
             <span className="material-symbols-outlined text-[16px]">check_circle</span>
           </div>
