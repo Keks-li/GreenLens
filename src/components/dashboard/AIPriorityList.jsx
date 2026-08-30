@@ -17,8 +17,8 @@ export default function AIPriorityList({
             AI Priority Actions
           </span>
         </div>
-        <span className="text-[10px] font-bold bg-primary-container text-on-primary-container px-2.5 py-0.5 rounded-full">
-          Live AI Queue
+        <span className="text-[10.5px] font-bold font-data-mono bg-primary-container text-on-primary-container px-2.5 py-0.5 rounded-full border border-primary/20">
+          {priorityActions?.length || 0} Items
         </span>
       </div>
 
@@ -77,26 +77,28 @@ export default function AIPriorityList({
                     e.stopPropagation();
                     if (action.status !== 'resolved' && onDispatch) onDispatch(action);
                   }}
-                  className={`px-3.5 py-1.5 rounded-full font-label-caps text-[11px] transition-all flex items-center gap-1.5 ${
+                  title={action.status === 'resolved' ? 'Resolved' : 'Dispatch Field Crew'}
+                  className={`px-3 py-1.5 rounded-xl font-label-caps text-[11px] transition-all flex items-center gap-1.5 ${
                     action.status === 'resolved'
                       ? 'bg-surface-container text-outline cursor-not-allowed opacity-60'
                       : 'bg-primary text-white hover:bg-primary/90 shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer font-bold'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[15px]">
+                  <span className="material-symbols-outlined text-[16px]">
                     {action.status === 'resolved' ? 'check_circle' : 'send'}
                   </span>
-                  {action.status === 'resolved' ? 'Resolved' : 'Dispatch Team'}
+                  <span>{action.status === 'resolved' ? 'Resolved' : 'Dispatch'}</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onViewDetails && onViewDetails(action);
                   }}
-                  className="bg-surface-container text-on-surface px-3 py-1.5 rounded-full font-label-caps text-[11px] font-bold hover:bg-surface-container-high transition-colors cursor-pointer"
+                  className="bg-surface-container hover:bg-surface-container-high text-on-surface px-3 py-1.5 rounded-xl font-label-caps text-[11px] font-bold transition-colors cursor-pointer"
                 >
-                  View Details
+                  Details
                 </button>
               </div>
             </div>

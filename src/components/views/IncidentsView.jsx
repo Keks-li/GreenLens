@@ -156,17 +156,24 @@ export default function IncidentsView({
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           {/* Status Filter */}
           <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-full border border-outline-variant/60 overflow-x-auto max-w-full">
-            {['all', 'unresolved', 'assigned', 'in-progress', 'resolved'].map((st) => (
+            {[
+              { id: 'all', label: 'All', count: incidentsList.length },
+              { id: 'unresolved', label: 'Unresolved', count: incidentsList.filter(i => i.status === 'unresolved').length },
+              { id: 'assigned', label: 'Assigned', count: incidentsList.filter(i => i.status === 'assigned').length },
+              { id: 'in-progress', label: 'In Progress', count: incidentsList.filter(i => i.status === 'in-progress').length },
+              { id: 'resolved', label: 'Resolved', count: incidentsList.filter(i => i.status === 'resolved').length }
+            ].map((st) => (
               <button
-                key={st}
-                onClick={() => setFilterStatus(st)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-label-caps uppercase transition-all shrink-0 whitespace-nowrap cursor-pointer ${
-                  filterStatus === st
+                key={st.id}
+                onClick={() => setFilterStatus(st.id)}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-label-caps uppercase transition-all shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-1 ${
+                  filterStatus === st.id
                     ? 'bg-primary text-white font-bold shadow-xs'
                     : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-semibold'
                 }`}
               >
-                {st}
+                <span>{st.label}</span>
+                <span className="text-[10px] opacity-80 font-data-mono">({st.count})</span>
               </button>
             ))}
           </div>
@@ -301,7 +308,7 @@ export default function IncidentsView({
                     className="p-1 rounded-full text-primary hover:bg-primary-container text-[11px] font-bold flex items-center gap-0.5 px-2.5 cursor-pointer transition-colors border border-primary/20"
                   >
                     <span className="material-symbols-outlined text-[14px]">explore</span>
-                    <span>Map</span>
+                    <span>See Map</span>
                   </button>
                 )}
 

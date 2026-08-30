@@ -7,16 +7,26 @@ export default function AIPriorityView({
 }) {
   return (
     <div className="px-4 sm:px-8 py-4 sm:py-6 w-full max-w-[1440px] mx-auto">
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="material-symbols-outlined text-primary text-[24px] animate-pulse">
-            auto_awesome
-          </span>
-          <h1 className="font-headline-lg text-on-surface">AI Priority & Dispatch Intelligence</h1>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="material-symbols-outlined text-primary text-[24px] animate-pulse">
+              auto_awesome
+            </span>
+            <h1 className="font-headline-lg text-on-surface font-bold text-[24px] sm:text-[28px]">
+              AI Priority &amp; Dispatch Intelligence
+            </h1>
+          </div>
+          <p className="font-body-md text-on-surface-variant text-[13.5px]">
+            Predictive multi-factor ranking based on blockage severity, rainfall forecast, population density, and critical infrastructure proximity.
+          </p>
         </div>
-        <p className="font-body-md text-on-surface-variant">
-          Predictive multi-factor ranking based on blockage severity, rainfall forecast, population density, and critical infrastructure proximity.
-        </p>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span className="bg-primary/10 text-primary border border-primary/20 px-3.5 py-1.5 rounded-full font-bold text-[12px] font-data-mono flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+            <span>{priorityActions?.length || 0} Critical Actions</span>
+          </span>
+        </div>
       </div>
 
       <div className="space-y-4">

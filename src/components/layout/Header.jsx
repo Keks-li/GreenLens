@@ -10,9 +10,11 @@ export default function Header({
   weatherData,
   incidents = [],
   unreadCount = 0,
+  readNotificationIds = new Set(),
   onSelectIncident,
   onLocateOnMap,
   onClearUnread,
+  onMarkAsRead,
   onNavigateView,
   onOpenHelp,
   onToggleMobileNav
@@ -48,14 +50,10 @@ export default function Header({
     if (notificationFilter === 'citizen') return inc.sourceTable === 'reports' || inc.reportedBy?.includes('Citizen') || inc.id?.startsWith('REP');
     if (notificationFilter === 'critical') return inc.severity === 'critical' || inc.severity === 'high';
     return true;
-  }).slice(0, 8);
+  }).slice(0, 10);
 
   const handleToggleNotifications = () => {
-    const nextState = !showNotificationsMenu;
-    setShowNotificationsMenu(nextState);
-    if (nextState && onClearUnread) {
-      onClearUnread();
-    }
+    setShowNotificationsMenu(!showNotificationsMenu);
   };
 
   return (
@@ -193,7 +191,7 @@ export default function Header({
           >
             <span className="material-symbols-outlined text-[22px]">notifications</span>
             {unreadCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-risk-critical text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse shadow-xs">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-risk-critical text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse shadow-sm border border-surface">
                 {unreadCount}
               </span>
             )}
@@ -208,18 +206,26 @@ export default function Header({
                   <span className="material-symbols-outlined text-primary text-[20px]">feed</span>
                   <div>
                     <h3 className="font-title-md text-[14px] text-on-surface font-bold">Incident Activities &amp; Uploads</h3>
-                    <p className="text-[11px] text-on-surface-variant">Live feed of citizen mobile scans and sensor alerts</p>
+                    <p className="text-[11px] text-on-surface-variant">
+                      {unreadCount > 0 ? `${unreadCount} unread incident reports` : 'All incident notifications reviewed'}
+                    </p>
                   </div>
                 </div>
-                <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full font-data-mono">
-                  Live
-                </span>
+                {unreadCount > 0 && onClearUnread && (
+                  <button
+                    type="button"
+                    onClick={onClearUnread}
+                    className="text-[11px] font-bold text-primary hover:underline bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-full cursor-pointer transition-colors shrink-0"
+                  >
+                    Mark all read
+                  </button>
+                )}
               </div>
 
               {/* Filter Tabs */}
               <div className="flex px-3 pt-2.5 border-b border-outline-variant/40 gap-2 bg-surface-container-low/30 text-[11px]">
                 {[
-                  { id: 'all', label: 'All Activities', count: incidents.length },
+                  { id: 'all', label: 'All', count: incidents.length },
                   { id: 'citizen', label: 'Citizen Scans', count: incidents.filter(i => i.id?.startsWith('REP')).length },
                   { id: 'critical', label: 'High / Critical', count: incidents.filter(i => i.severity === 'critical' || i.severity === 'high').length }
                 ].map((tab) => (
@@ -250,12 +256,16 @@ export default function Header({
                     const isCritical = item.severity === 'critical';
                     const isHigh = item.severity === 'high';
                     const isCitizenScan = item.id?.startsWith('REP');
+                    const isUnread = !readNotificationIds?.has(item.id);
 
                     return (
                       <div
                         key={item.id}
-                        className="p-2.5 rounded-xl hover:bg-surface-container-low transition-all flex items-start gap-3 group relative cursor-pointer"
+                        className={`p-2.5 rounded-xl hover:bg-surface-container-low transition-all flex items-start gap-3 group relative cursor-pointer ${
+                          isUnread ? 'bg-primary/5' : ''
+                        }`}
                         onClick={() => {
+                          if (onMarkAsRead) onMarkAsRead(item.id);
                           setShowNotificationsMenu(false);
                           if (onSelectIncident) onSelectIncident(item);
                         }}
@@ -290,9 +300,14 @@ export default function Header({
                         {/* Details */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <h4 className="font-title-sm text-[13px] font-bold text-on-surface truncate group-hover:text-primary transition-colors">
-                              {item.title}
-                            </h4>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              {isUnread && (
+                                <span className="w-2 h-2 rounded-full bg-primary shrink-0" title="New / Unread"></span>
+                              )}
+                              <h4 className="font-title-sm text-[13px] font-bold text-on-surface truncate group-hover:text-primary transition-colors">
+                                {item.title}
+                              </h4>
+                            </div>
                             <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase shrink-0 ${
                               isCritical ? 'bg-error-container text-risk-critical' : isHigh ? 'bg-amber-100 text-amber-900' : 'bg-surface-container text-outline'
                             }`}>
@@ -323,6 +338,7 @@ export default function Header({
                               title="Locate on Exact Incident Map"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                if (onMarkAsRead) onMarkAsRead(item.id);
                                 setShowNotificationsMenu(false);
                                 if (onLocateOnMap) onLocateOnMap(item);
                               }}

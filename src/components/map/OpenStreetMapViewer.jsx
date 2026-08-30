@@ -546,15 +546,93 @@ export default function OpenStreetMapViewer({
     }
   }, [selectedSegmentId, drainageSegments]);
 
-  // Recenter / Pan smoothly if focusedLocation changes (e.g. from notification map icon click)
+  // Recenter / Pan smoothly and open rich incident popup when focusedLocation changes (e.g. from See Map / Locate click)
   useEffect(() => {
     if (!mapInstanceRef.current || !focusedLocation) return;
-    if (focusedLocation.lat && focusedLocation.lng) {
-      mapInstanceRef.current.flyTo(
-        [Number(focusedLocation.lat), Number(focusedLocation.lng)],
-        focusedLocation.zoom || 17,
-        { duration: 1.2 }
-      );
+    const map = mapInstanceRef.current;
+    const lat = Number(focusedLocation.lat);
+    const lng = Number(focusedLocation.lng);
+
+    if (lat && lng) {
+      map.flyTo([lat, lng], focusedLocation.zoom || 17, { duration: 1.2 });
+
+      // Remove existing focus marker if any
+      if (clickMarkerRef.current) {
+        map.removeLayer(clickMarkerRef.current);
+      }
+
+      const item = focusedLocation.item || focusedLocation;
+      const isCritical = item.severity === 'critical' || item.riskLevel === 'critical';
+      const isHigh = item.severity === 'high' || item.riskLevel === 'high';
+      const markerColor = isCritical ? '#ba1a1a' : isHigh ? '#e65100' : '#206d1f';
+
+      const focusIcon = L.divIcon({
+        html: `
+          <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+            <div style="position: absolute; width: 44px; height: 44px; border-radius: 50%; background-color: ${markerColor}; opacity: 0.5; animation: ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: ${markerColor}; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10;">
+              <span style="color: white; font-size: 14px; font-weight: bold;">📍</span>
+            </div>
+            <div style="width: 3px; height: 12px; background: ${markerColor};"></div>
+          </div>
+        `,
+        className: 'osm-focus-pin',
+        iconSize: [32, 46],
+        iconAnchor: [16, 46]
+      });
+
+      const popupHtml = `
+        <div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; padding: 4px; max-width: 290px; color: #1b1c1c;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e4e2e2; padding-bottom: 6px; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${markerColor}; shrink-0;"></span>
+              <strong style="font-size: 13px; font-weight: 700; color: #1b1c1c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">
+                ${item.title || focusedLocation.title || 'Incident Location'}
+              </strong>
+            </div>
+            <span style="font-size: 10px; font-weight: 700; background: ${markerColor}; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+              ${item.severity || item.riskLevel || 'Incident'}
+            </span>
+          </div>
+
+          ${item.imageUrl ? `
+            <div style="margin-bottom: 8px; border-radius: 8px; overflow: hidden; height: 110px; border: 1px solid #e4e2e2;">
+              <img src="${item.imageUrl}" alt="${item.title || ''}" style="width: 100%; height: 100%; object-fit: cover;" />
+            </div>
+          ` : ''}
+
+          <div style="font-size: 11px; margin-bottom: 6px; color: #40493d; line-height: 1.4;">
+            <div><strong>ID:</strong> <span style="font-family: monospace;">${item.id || 'INC'}</span> • <strong>Status:</strong> <span style="text-transform: capitalize;">${item.status || 'Active'}</span></div>
+            <div><strong>Sector / Address:</strong> ${item.sector || item.address || 'Winneba Catchment'}</div>
+            <div><strong>GPS:</strong> <span style="font-family: monospace;">${lat.toFixed(4)}°N, ${Math.abs(lng).toFixed(4)}°W</span></div>
+            ${item.refuseType ? `<div><strong>Refuse Type:</strong> ${item.refuseType}</div>` : ''}
+            ${item.reportedBy ? `<div><strong>Reported By:</strong> ${item.reportedBy}</div>` : ''}
+          </div>
+
+          ${item.description ? `
+            <div style="background: #f5f3f3; padding: 6px 8px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; color: #1b1c1c; line-height: 1.3;">
+              ${item.description}
+            </div>
+          ` : ''}
+
+          <div style="display: flex; gap: 4px; margin-top: 6px;">
+            <button
+              type="button"
+              onclick="window.__greenlens_dispatch_location('${item.title || item.sector || 'Incident'}', ${lat}, ${lng})"
+              style="flex: 1; background: #206d1f; color: white; border: none; padding: 7px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;"
+            >
+              <span>Dispatch Resolution Team</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      const focusMarker = L.marker([lat, lng], { icon: focusIcon, zIndexOffset: 1000 })
+        .addTo(map)
+        .bindPopup(popupHtml, { maxWidth: 310, closeButton: true })
+        .openPopup();
+
+      clickMarkerRef.current = focusMarker;
     }
   }, [focusedLocation]);
 

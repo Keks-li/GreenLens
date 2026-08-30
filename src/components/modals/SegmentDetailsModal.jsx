@@ -210,13 +210,14 @@ export default function SegmentDetailsModal({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="bg-surface-container-low/80 backdrop-blur-md px-6 py-4 border-t border-outline-variant flex items-center justify-between">
+        {/* Sleek Footer */}
+        <div className="bg-surface-container-low/80 backdrop-blur-md px-5 sm:px-6 py-3.5 sm:py-4 border-t border-outline-variant flex items-center justify-between gap-3">
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-on-surface-variant font-label-caps text-[12px] hover:bg-surface-container transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-semibold text-[13px] transition-colors cursor-pointer"
           >
-            Close
+            Dismiss
           </button>
           <button
             type="button"
@@ -227,16 +228,16 @@ export default function SegmentDetailsModal({
                 onOpenDispatch && onOpenDispatch(segment);
               }
             }}
-            className={`px-5 py-2.5 rounded-xl font-label-caps text-[12px] transition-all flex items-center gap-2 ${
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold transition-all whitespace-nowrap ${
               segment.status === 'resolved' || segment.blockagePercentage === 0
                 ? 'bg-surface-container-high text-outline cursor-not-allowed opacity-60'
-                : 'bg-primary text-on-primary hover:bg-surface-tint shadow-xs cursor-pointer'
+                : 'bg-primary hover:bg-primary/95 text-white shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">
+            <span className="material-symbols-outlined text-[17px]">
               {segment.status === 'resolved' || segment.blockagePercentage === 0 ? 'check_circle' : 'local_shipping'}
             </span>
-            {segment.status === 'resolved' || segment.blockagePercentage === 0 ? 'Segment Cleared' : 'Dispatch Cleanup Team'}
+            <span>{segment.status === 'resolved' || segment.blockagePercentage === 0 ? 'Segment Cleared' : 'Dispatch Cleanup Team'}</span>
           </button>
         </div>
       </div>

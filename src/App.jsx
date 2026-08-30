@@ -56,9 +56,43 @@ export default function App() {
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [dispatchItem, setDispatchItem] = useState(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(2);
   const [focusedLocation, setFocusedLocation] = useState(null);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Exact Notification State Tracking
+  const [readNotificationIds, setReadNotificationIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem('greenlens_read_notifications');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const handleMarkAllNotificationsRead = () => {
+    const allIds = (incidents || []).map((i) => i.id);
+    const updated = new Set(allIds);
+    setReadNotificationIds(updated);
+    try {
+      localStorage.setItem('greenlens_read_notifications', JSON.stringify([...updated]));
+    } catch {}
+  };
+
+  const handleMarkNotificationRead = (incidentId) => {
+    setReadNotificationIds((prev) => {
+      const updated = new Set(prev);
+      updated.add(incidentId);
+      try {
+        localStorage.setItem('greenlens_read_notifications', JSON.stringify([...updated]));
+      } catch {}
+      return updated;
+    });
+  };
+
+  // Exact count of active unread items
+  const unreadNotificationsCount = (incidents || []).filter(
+    (i) => i.status !== 'resolved' && !readNotificationIds.has(i.id)
+  ).length;
 
   // Toast Notification State
   const [toastMessage, setToastMessage] = useState(null);
@@ -208,19 +242,27 @@ export default function App() {
     if (!item) return;
     const lat = item.latitude || item.coordinates?.lat || 5.3556;
     const lng = item.longitude || item.coordinates?.lng || -0.6247;
+    
+    // Close any popup modals so the map is fully visible
+    setSelectedIncident(null);
+    setSelectedSegment(null);
+    setDispatchItem(null);
+
     setFocusedLocation({
       lat,
       lng,
       zoom: 17,
       id: item.id,
-      title: item.title || item.name
+      title: item.title || item.name,
+      item: item
     });
+
     setCurrentView('dashboard');
-    if (item.sourceTable === 'reports' || item.severity) {
-      setSelectedIncident(item);
-    } else {
-      setSelectedSegment(item);
-    }
+    
+    // Smooth scroll to map on the dashboard
+    setTimeout(() => {
+      window.scrollTo({ top: 320, behavior: 'smooth' });
+    }, 100);
   };
 
   const handleOpenDispatch = (item) => {
@@ -274,6 +316,9 @@ export default function App() {
         currentUser={currentUser}
         isMobileOpen={isMobileNavOpen}
         onCloseMobile={() => setIsMobileNavOpen(false)}
+        incidentsCount={incidents.filter(i => i.status !== 'resolved').length || incidents.length}
+        aiPriorityCount={priorityActions.length}
+        alertsCount={alerts.length}
         onLogout={() => {
           setCurrentUser(null);
           showToast('Logged out of Command Session.');
@@ -293,9 +338,17 @@ export default function App() {
           weatherData={weather}
           incidents={incidents}
           unreadCount={unreadNotificationsCount}
-          onSelectIncident={handleSelectIncident}
-          onLocateOnMap={handleLocateOnMap}
-          onClearUnread={() => setUnreadNotificationsCount(0)}
+          readNotificationIds={readNotificationIds}
+          onSelectIncident={(item) => {
+            handleMarkNotificationRead(item.id);
+            handleSelectIncident(item);
+          }}
+          onLocateOnMap={(item) => {
+            handleMarkNotificationRead(item.id);
+            handleLocateOnMap(item);
+          }}
+          onClearUnread={handleMarkAllNotificationsRead}
+          onMarkAsRead={handleMarkNotificationRead}
           onNavigateView={(v) => {
             setCurrentView(v);
             setIsMobileNavOpen(false);
@@ -315,7 +368,8 @@ export default function App() {
               focusedLocation={focusedLocation}
               priorityActions={priorityActions}
               selectedMunicipality={selectedMunicipality}
-              citizenRewards={citizenRewards}
+              fieldTeams={fieldTeams}
+              dispatches={dispatches}
               onNavigateView={(v) => {
                 setCurrentView(v);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -332,6 +386,8 @@ export default function App() {
                 if (type === 'drains') setCurrentView('digital-twin');
                 else setCurrentView('incidents');
               }}
+              onLocateOnMap={handleLocateOnMap}
+              onRefreshData={() => loadData(selectedMunicipalityId)}
             />
           )}
 

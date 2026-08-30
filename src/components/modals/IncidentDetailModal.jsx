@@ -26,27 +26,25 @@ export default function IncidentDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in select-none">
       <div className="bg-surface-container-lowest/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-outline-variant w-full max-w-xl overflow-hidden animate-in zoom-in-95 max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="bg-surface-container-low/80 backdrop-blur-md px-6 py-4 border-b border-outline-variant flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-error-container flex items-center justify-center text-risk-critical">
+        <div className="bg-surface-container-low/80 backdrop-blur-md px-5 sm:px-6 py-3.5 sm:py-4 border-b border-outline-variant flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-error-container flex items-center justify-center text-risk-critical shrink-0 shadow-2xs">
               <span className="material-symbols-outlined text-[22px]">report_problem</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-title-md font-bold text-on-surface text-[17px]">
-                  {incident.title}
-                </h3>
-              </div>
-              <p className="text-[12px] text-on-surface-variant">
+            <div className="min-w-0">
+              <h3 className="font-title-md font-bold text-on-surface text-[16px] sm:text-[17px] truncate">
+                {incident.title}
+              </h3>
+              <p className="text-[11.5px] text-on-surface-variant truncate">
                 ID: {incident.id} • {incident.reportedAt}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {onLocateOnMap && (
               <button
                 type="button"
@@ -54,25 +52,26 @@ export default function IncidentDetailModal({
                   onClose();
                   onLocateOnMap(incident);
                 }}
-                className="p-1.5 rounded-xl bg-primary/10 hover:bg-primary hover:text-on-primary text-primary transition-all flex items-center gap-1 text-[11px] font-bold px-3 cursor-pointer border border-primary/20"
-                title="View Exact GPS Location on Map"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300/80 text-[12px] font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-2xs cursor-pointer whitespace-nowrap"
+                title="See Exact Location on Map"
               >
-                <span className="material-symbols-outlined text-[16px]">explore</span>
-                <span>Locate on Map</span>
+                <span className="material-symbols-outlined text-[16px] text-emerald-700">explore</span>
+                <span>See Map</span>
               </button>
             )}
 
             <button
+              type="button"
               onClick={onClose}
-              className="p-1.5 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer"
+              className="p-1.5 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[22px]">close</span>
+              <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto space-y-4 flex-1 text-body-sm">
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1 text-body-sm">
           {/* Incident Clear Image Preview with Transparent HUD */}
           {incident.imageUrl && (
             <div
@@ -104,7 +103,7 @@ export default function IncidentDetailModal({
           <div className="p-3.5 rounded-2xl bg-primary/5 border border-primary/20 flex flex-wrap items-center justify-between gap-3">
             <div>
               <span className="text-[10px] uppercase font-bold text-outline block">Detected Refuse &amp; Material Type</span>
-              <div className="text-[14px] font-bold text-on-surface flex items-center gap-1.5 mt-0.5">
+              <div className="text-[13.5px] font-bold text-on-surface flex items-center gap-1.5 mt-0.5">
                 <span className="material-symbols-outlined text-primary text-[18px]">recycling</span>
                 <span>{incident.refuseType || 'Plastics & Polymers (PET / Sachet Bags)'}</span>
               </div>
@@ -120,7 +119,7 @@ export default function IncidentDetailModal({
           {/* Description */}
           <div className="bg-surface-container-low/70 backdrop-blur-xs p-4 rounded-2xl border border-outline-variant/60">
             <span className="text-[10px] uppercase font-label-caps text-outline font-bold">Report Description</span>
-            <p className="text-on-surface text-[14px] mt-1 leading-relaxed">{incident.description}</p>
+            <p className="text-on-surface text-[13.5px] mt-1 leading-relaxed">{incident.description}</p>
           </div>
 
           {/* AI Risk Assessment Card if present */}
@@ -157,18 +156,18 @@ export default function IncidentDetailModal({
           <div className="grid grid-cols-2 gap-3 text-[12px]">
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
               <span className="text-outline font-semibold block text-[11px]">Reported By</span>
-              <div className="text-on-surface font-medium mt-0.5">{incident.reportedBy}</div>
+              <div className="text-on-surface font-medium mt-0.5 truncate">{incident.reportedBy}</div>
               {incident.reporterContact && (
-                <div className="text-[10px] text-primary font-data-mono mt-0.5">{incident.reporterContact}</div>
+                <div className="text-[10px] text-primary font-data-mono mt-0.5 truncate">{incident.reporterContact}</div>
               )}
             </div>
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
               <span className="text-outline font-semibold block text-[11px]">Associated Drain / Sector</span>
-              <div className="text-primary font-bold mt-0.5">{incident.drainId || incident.sector || 'Winneba Swale'}</div>
+              <div className="text-primary font-bold mt-0.5 truncate">{incident.drainId || incident.sector || 'Winneba Swale'}</div>
             </div>
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
               <span className="text-outline font-semibold block text-[11px]">GPS Coordinates</span>
-              <div className="font-data-mono text-on-surface font-medium mt-0.5">{incident.coords || '5.3556°N, 0.6247°W'}</div>
+              <div className="font-data-mono text-on-surface font-medium mt-0.5 truncate">{incident.coords || '5.3556°N, 0.6247°W'}</div>
             </div>
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
               <span className="text-outline font-semibold block text-[11px]">Current Status</span>
@@ -177,12 +176,13 @@ export default function IncidentDetailModal({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="bg-surface-container-low/80 backdrop-blur-md px-6 py-4 border-t border-outline-variant flex items-center justify-between gap-3">
+        {/* Sleek Footer Actions */}
+        <div className="bg-surface-container-low/80 backdrop-blur-md px-5 sm:px-6 py-3.5 sm:py-4 border-t border-outline-variant flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-on-surface-variant font-label-caps text-[12px] hover:bg-surface-container transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-semibold text-[13px] transition-colors cursor-pointer"
             >
               Dismiss
             </button>
@@ -194,10 +194,10 @@ export default function IncidentDetailModal({
                   onClose();
                   onLocateOnMap(incident);
                 }}
-                className="bg-surface-container-high hover:bg-surface-container text-on-surface px-4 py-2.5 rounded-xl font-label-caps text-[12px] transition-all flex items-center gap-1.5 cursor-pointer border border-outline-variant/60"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-primary border border-outline-variant/60 text-[12.5px] font-bold transition-all hover:scale-[1.02] active:scale-95 cursor-pointer whitespace-nowrap shadow-2xs"
               >
                 <span className="material-symbols-outlined text-[16px] text-primary">explore</span>
-                <span>Locate on Map</span>
+                <span>See on Map</span>
               </button>
             )}
           </div>
@@ -208,10 +208,10 @@ export default function IncidentDetailModal({
                 type="button"
                 disabled={isUpdating}
                 onClick={handleResolve}
-                className="bg-secondary-container text-on-secondary-container px-4 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-secondary/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[12.5px] font-bold transition-all hover:scale-[1.02] active:scale-95 cursor-pointer whitespace-nowrap shadow-2xs"
               >
-                <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                Mark Resolved
+                <span className="material-symbols-outlined text-[16px] text-emerald-700">check_circle</span>
+                <span>Mark Resolved</span>
               </button>
             )}
 
@@ -224,16 +224,16 @@ export default function IncidentDetailModal({
                   onOpenDispatch && onOpenDispatch(incident);
                 }
               }}
-              className={`px-5 py-2.5 rounded-xl font-label-caps text-[12px] transition-all flex items-center gap-2 ${
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold transition-all whitespace-nowrap ${
                 incident.status === 'resolved'
                   ? 'bg-surface-container-high text-outline cursor-not-allowed opacity-60'
-                  : 'bg-primary text-on-primary hover:bg-surface-tint shadow-xs cursor-pointer'
+                  : 'bg-primary hover:bg-primary/95 text-white shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer'
               }`}
             >
-              <span className="material-symbols-outlined text-[18px]">
+              <span className="material-symbols-outlined text-[16px]">
                 {incident.status === 'resolved' ? 'check_circle' : 'send'}
               </span>
-              {incident.status === 'resolved' ? 'Incident Resolved' : 'Dispatch Resolution Team'}
+              <span>{incident.status === 'resolved' ? 'Resolved' : 'Dispatch Team'}</span>
             </button>
           </div>
         </div>

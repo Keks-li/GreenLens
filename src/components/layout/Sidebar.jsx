@@ -6,6 +6,9 @@ export default function Sidebar({
   setCurrentView,
   selectedMunicipality,
   currentUser,
+  incidentsCount = 0,
+  aiPriorityCount = 0,
+  alertsCount = 0,
   onLogout,
   isMobileOpen = false,
   onCloseMobile
@@ -23,8 +26,8 @@ export default function Sidebar({
     {
       title: 'Operations',
       items: [
-        { id: 'incidents', label: 'Incidents', icon: 'report_problem', badge: '12' },
-        { id: 'ai-priority', label: 'AI Priority', icon: 'auto_awesome', badge: '3' },
+        { id: 'incidents', label: 'Incidents', icon: 'report_problem', badge: incidentsCount > 0 ? `${incidentsCount}` : null },
+        { id: 'ai-priority', label: 'AI Priority', icon: 'auto_awesome', badge: aiPriorityCount > 0 ? `${aiPriorityCount}` : null },
         { id: 'dispatch', label: 'Dispatch', icon: 'local_shipping' },
         { id: 'field-teams', label: 'Field Teams', icon: 'groups' },
       ]
@@ -48,7 +51,7 @@ export default function Sidebar({
     {
       title: 'Global',
       items: [
-        { id: 'alerts', label: 'Alerts', icon: 'notifications_active', badge: '4' },
+        { id: 'alerts', label: 'Alerts', icon: 'notifications_active', badge: alertsCount > 0 ? `${alertsCount}` : null },
         { id: 'administration', label: 'User Management', icon: 'manage_accounts' },
       ]
     }

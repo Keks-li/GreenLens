@@ -12,14 +12,17 @@ export default function DashboardView({
   focusedLocation = null,
   priorityActions = [],
   selectedMunicipality,
-  citizenRewards = [],
+  fieldTeams = [],
+  dispatches = [],
   onNavigateView,
   onSelectSegment,
   onSelectIncident,
   selectedSegmentId,
   onDispatchAction,
   onViewDetailsAction,
-  onInspectRisk
+  onInspectRisk,
+  onLocateOnMap,
+  onRefreshData
 }) {
   const segments = drainageSegments || [];
   const criticalDrainsCount = segments.filter(
@@ -37,243 +40,91 @@ export default function DashboardView({
       if (inc.sector) highRiskSectors.add(inc.sector);
     }
   });
-  const highRiskCommunitiesCount = highRiskSectors.size || (criticalDrainsCount > 0 ? criticalDrainsCount : 1);
+  const highRiskCommunitiesCount = highRiskSectors.size || (criticalDrainsCount > 0 ? criticalDrainsCount : 0);
   const rainForecastHours = weather?.rainForecastHours || 18;
-  const rain24hMm = weather?.rain24hMm || '5.9';
 
-  // Calculate total citizen eco points
-  const totalEcoPoints = (citizenRewards || []).reduce((acc, curr) => acc + (curr.points || 0), 100);
-  const reportsCount = incidents.length || 3;
-  const overallRisk = criticalDrainsCount > 2 ? 'High' : criticalDrainsCount > 0 ? 'Moderate' : 'Low';
+  // Recent 5 live reports directly from database
+  const recentIncidents = (incidents || []).slice(0, 5);
+
+  // Active or top field teams directly from database
+  const activeTeams = (fieldTeams || []).slice(0, 4);
+
+  // Dynamic time-of-day greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
     <div className="flex flex-col w-full">
       <div className="px-4 sm:px-8 py-4 sm:py-6 w-full max-w-[1440px] mx-auto space-y-6 sm:space-y-8">
         
-        {/* Welcome Header & Municipality Location Pill */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">
+        {/* Welcome Header & Operational Command Controls */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 select-none bg-surface-container-lowest p-5 sm:p-6 rounded-3xl border border-outline-variant/60 shadow-xs">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-[11px] font-bold tracking-wide uppercase mb-2 border border-[#bbf7d0]">
               <span className="material-symbols-outlined text-[15px] text-primary">location_on</span>
               <span>{selectedMunicipality?.name || 'Winneba Municipal Assembly'}</span>
             </div>
-            <h1 className="font-headline-lg text-on-surface font-bold text-[26px] sm:text-[32px] tracking-tight">
-              Good morning, Municipal Officer
+            <h1 className="font-headline-lg text-on-surface font-bold text-[24px] sm:text-[30px] tracking-tight">
+              {greeting}, Municipal Officer
             </h1>
-            <p className="font-body-md text-on-surface-variant text-[14px] sm:text-[15px]">
-              Live environmental telemetry, flood risk sentinel, and citizen rewards intelligence.
+            <p className="font-body-md text-on-surface-variant text-[13.5px] sm:text-[14.5px] mt-0.5">
+              Live environmental telemetry, drainage network health, and active incident response operations.
             </p>
           </div>
 
-          {/* Quick Action Navigation Grid (Matching Mobile App 4 Pastel Tiles) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full md:w-auto">
-            {/* AI Scan Action */}
-            <button
-              onClick={() => onNavigateView && onNavigateView('incidents')}
-              className="bg-primary hover:bg-primary/95 text-white p-3 rounded-2xl flex flex-col items-start gap-1.5 shadow-sm transition-all hover:scale-[1.02] active:scale-98 cursor-pointer text-left relative overflow-hidden min-w-[120px]"
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[18px]">document_scanner</span>
-                </div>
-                <span className="text-[9px] font-extrabold bg-[#fde047] text-[#854d0e] px-1.5 py-0.5 rounded-md">
-                  AI
-                </span>
-              </div>
-              <div className="mt-1">
-                <div className="font-bold text-[13px] leading-tight">AI Scan</div>
-                <div className="text-[10px] text-white/80">Report Drain</div>
-              </div>
-            </button>
-
-            {/* Flood Radar Action */}
-            <button
-              onClick={() => onNavigateView && onNavigateView('flood-risk')}
-              className="bg-[#e0f2fe] hover:bg-[#d0ebfd] text-[#0369a1] p-3 rounded-2xl flex flex-col items-start gap-1.5 border border-[#bae6fd] shadow-2xs transition-all hover:scale-[1.02] active:scale-98 cursor-pointer text-left min-w-[120px]"
-            >
-              <div className="w-8 h-8 rounded-xl bg-[#bae6fd]/60 flex items-center justify-center text-[#0284c7]">
-                <span className="material-symbols-outlined text-[18px]">water_drop</span>
-              </div>
-              <div className="mt-1">
-                <div className="font-bold text-[13px] leading-tight text-[#0369a1]">Flood Radar</div>
-                <div className="text-[10px] text-[#0284c7]/80">Live Forecast</div>
-              </div>
-            </button>
-
-            {/* Map View Action */}
-            <button
-              onClick={() => onNavigateView && onNavigateView('digital-twin')}
-              className="bg-[#fef3c7] hover:bg-[#fde68a] text-[#b45309] p-3 rounded-2xl flex flex-col items-start gap-1.5 border border-[#fde68a] shadow-2xs transition-all hover:scale-[1.02] active:scale-98 cursor-pointer text-left min-w-[120px]"
-            >
-              <div className="w-8 h-8 rounded-xl bg-[#fde68a]/60 flex items-center justify-center text-[#d97706]">
-                <span className="material-symbols-outlined text-[18px]">explore</span>
-              </div>
-              <div className="mt-1">
-                <div className="font-bold text-[13px] leading-tight text-[#b45309]">Map View</div>
-                <div className="text-[10px] text-[#d97706]/80">Near You</div>
-              </div>
-            </button>
-
-            {/* Rewards Action */}
-            <button
-              onClick={() => onNavigateView && onNavigateView('waste-intelligence')}
-              className="bg-[#f3e8ff] hover:bg-[#ebd5ff] text-[#7e22ce] p-3 rounded-2xl flex flex-col items-start gap-1.5 border border-[#e9d5ff] shadow-2xs transition-all hover:scale-[1.02] active:scale-98 cursor-pointer text-left min-w-[120px]"
-            >
-              <div className="w-8 h-8 rounded-xl bg-[#e9d5ff]/60 flex items-center justify-center text-[#9333ea]">
-                <span className="material-symbols-outlined text-[18px]">card_giftcard</span>
-              </div>
-              <div className="mt-1">
-                <div className="font-bold text-[13px] leading-tight text-[#7e22ce]">Rewards</div>
-                <div className="text-[10px] text-[#9333ea]/80">Redeem Pts</div>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Design Signature Cards: Community Flood Sentinel & Impact Rewards Banner */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Community Flood Sentinel Card (7 cols) */}
-          <div className="lg:col-span-7 bg-[#eaf8ee] border border-[#bbf0cb] rounded-3xl p-5 sm:p-6 shadow-card-soft flex flex-col justify-between relative overflow-hidden">
-            {/* Background subtle watermark */}
-            <div className="absolute right-3 top-2 text-[#0d6832]/5 pointer-events-none">
-              <span className="material-symbols-outlined text-[120px]">shield</span>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-3.5">
-                <span className="material-symbols-outlined text-primary text-[20px]">shield</span>
-                <h2 className="font-title-md text-primary font-bold text-[16px] tracking-tight">
-                  Community Flood Sentinel
-                </h2>
-              </div>
-
-              {/* Status Box */}
-              <div className="bg-white/80 backdrop-blur-xs rounded-2xl p-4 border border-[#bbf0cb]/60 mb-4 shadow-2xs">
-                <div className="flex items-center justify-between flex-wrap gap-2 mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center text-primary">
-                      <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                    </div>
-                    <span className="font-title-md font-bold text-on-surface text-[15px]">
-                      Risk Level: <span className={overallRisk === 'High' ? 'text-risk-critical' : overallRisk === 'Moderate' ? 'text-risk-high' : 'text-primary'}>{overallRisk}</span>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 bg-[#0d6832] text-white px-2.5 py-0.5 rounded-full text-[10px] font-extrabold font-data-mono tracking-wide shadow-2xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#86efac] animate-ping"></span>
-                    <span>LIVE RADAR</span>
-                  </div>
-                </div>
-
-                <p className="text-[12.5px] text-on-surface-variant pl-9">
-                  {criticalDrainsCount > 0
-                    ? `${criticalDrainsCount} culverts need immediate desilting • Localized risk elevated`
-                    : 'Drainage network clear • Minimal municipal flood risk'}
-                </p>
-              </div>
-            </div>
-
-            {/* Bottom Forecast & Precautions Row */}
-            <div className="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-[#bbf0cb]/50">
-              <div className="inline-flex items-center gap-2 bg-white/90 px-3.5 py-1.5 rounded-full text-[12px] font-semibold text-on-surface border border-[#bbf0cb]/70 shadow-2xs">
-                <span className="material-symbols-outlined text-primary text-[16px]">rainy</span>
-                <span>Rain Forecast: <strong>{rain24hMm} mm</strong> (24h)</span>
-              </div>
-
+          {/* Quick Operational Command Actions */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Refresh Live Telemetry */}
+            {onRefreshData && (
               <button
-                onClick={() => onNavigateView && onNavigateView('flood-risk')}
-                className="text-primary hover:text-primary/80 font-bold text-[12.5px] flex items-center gap-1 hover:underline cursor-pointer"
+                type="button"
+                onClick={onRefreshData}
+                title="Fetch fresh records from database"
+                className="bg-surface-container hover:bg-surface-container-high text-on-surface p-2.5 rounded-xl border border-outline-variant transition-all hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center gap-1.5 text-[12px] font-bold"
               >
-                <span>Precautions</span>
-                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                <span className="material-symbols-outlined text-[18px] text-primary">sync</span>
+                <span className="hidden sm:inline">Refresh Data</span>
               </button>
-            </div>
-          </div>
+            )}
 
-          {/* Your Impact & Rewards Card (5 cols) */}
-          <div className="lg:col-span-5 bg-forest-hero rounded-3xl p-5 sm:p-6 text-white shadow-card-hover flex flex-col justify-between relative overflow-hidden">
-            {/* Background glowing gradient ball */}
-            <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-[#86efac]/10 rounded-full blur-2xl pointer-events-none"></div>
-
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#86efac] text-[20px]">energy_savings_leaf</span>
-                  <span className="font-title-md font-bold text-[15px] text-white">Your Impact &amp; Rewards</span>
-                </div>
-                <span className="bg-[#fef9c3] text-[#854d0e] border border-[#fef08a] px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide">
-                  ECO NOVICE
+            {/* Incidents Queue */}
+            <button
+              type="button"
+              onClick={() => onNavigateView && onNavigateView('incidents')}
+              className="bg-surface-container-low hover:bg-surface-container border border-outline-variant hover:border-primary/40 text-on-surface px-3.5 py-2.5 rounded-xl font-label-caps text-[12px] font-bold shadow-2xs transition-all hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[18px] text-primary">assignment</span>
+              <span>Incident Queue</span>
+              {incidents.length > 0 && (
+                <span className="bg-primary text-white text-[10px] px-1.5 py-0.5 rounded-full font-data-mono">
+                  {incidents.length}
                 </span>
-              </div>
+              )}
+            </button>
 
-              {/* Main Score Display */}
-              <div className="flex items-baseline justify-between mb-4">
-                <div className="flex items-baseline gap-2">
-                  <span className="font-display font-extrabold text-[36px] sm:text-[42px] leading-none text-white">
-                    {totalEcoPoints}
-                  </span>
-                  <span className="font-bold text-[13px] tracking-wider text-[#86efac] uppercase">
-                    GREEN PTS
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => onNavigateView && onNavigateView('waste-intelligence')}
-                  className="bg-[#fde047] hover:bg-[#facc15] text-[#854d0e] font-bold text-[11.5px] px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
-                >
-                  <span>Redeem</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                </button>
-              </div>
-
-              {/* Sub-Pills */}
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-xl px-3 py-2 flex items-center gap-2">
-                  <span className="text-[#86efac] font-bold text-[13px]">✓</span>
-                  <span className="text-[11.5px] font-semibold text-white/95 truncate">
-                    {reportsCount} Reports Filed
-                  </span>
-                </div>
-                <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-xl px-3 py-2 flex items-center gap-2">
-                  <span className="text-[#fde047] text-[13px]">⚡</span>
-                  <span className="text-[11.5px] font-semibold text-white/95 truncate">
-                    Instant AI Review
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Quest Card */}
-            <div className="bg-white rounded-2xl p-3.5 text-on-surface shadow-md">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[16px]">📋</span>
-                  <div>
-                    <span className="text-[9px] font-extrabold uppercase text-primary tracking-wide block">ACTIVE QUEST</span>
-                    <span className="font-bold text-[12px] text-on-surface">Report 5 Blocked Drains</span>
-                  </div>
-                </div>
-                <span className="bg-[#fef9c3] text-[#854d0e] border border-[#fef08a] px-2 py-0.5 rounded-full text-[10px] font-extrabold font-data-mono">
-                  +250 PTS
-                </span>
-              </div>
-              <div className="w-full bg-[#e8f0e8] rounded-full h-2 overflow-hidden mb-1.5">
-                <div className="bg-primary h-full rounded-full transition-all duration-500" style={{ width: '60%' }}></div>
-              </div>
-              <div className="flex justify-between items-center text-[10.5px] text-on-surface-variant font-semibold">
-                <span>3 of 5 tasks completed</span>
-                <span className="text-primary font-bold">60%</span>
-              </div>
-            </div>
+            {/* Dispatch Field Team */}
+            <button
+              type="button"
+              onClick={() => onNavigateView && onNavigateView('dispatch')}
+              className="bg-primary hover:bg-surface-tint text-on-primary px-4 py-2.5 rounded-xl font-label-caps text-[12px] font-bold shadow-xs transition-all hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">send</span>
+              <span>Dispatch</span>
+            </button>
           </div>
         </div>
 
         {/* Executive KPI Row */}
         <div>
-          <h3 className="font-title-md font-bold text-on-surface text-[17px] mb-3 flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[20px]">monitoring</span>
-            <span>Municipal Performance Indicators</span>
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-title-md font-bold text-on-surface text-[17px] flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px]">monitoring</span>
+              <span>Municipal Performance Indicators</span>
+            </h3>
+            <span className="text-[11px] font-data-mono text-outline font-semibold uppercase">
+              Live Database Sync
+            </span>
+          </div>
           <KPIGrid
             kpis={kpis}
             onCardClick={(type) => {
@@ -285,9 +136,9 @@ export default function DashboardView({
           />
         </div>
 
-        {/* Live Risk Section & AI Recommendations (12-col Grid) */}
+        {/* Live GIS Telemetry & Risk Section (12-col Grid) */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 sm:gap-8">
-          {/* Left: Interactive Map (8 cols) */}
+          {/* Left: Interactive Telemetry Map (8 cols) */}
           <LiveTelemetryMap
             drainageSegments={drainageSegments}
             incidents={incidents}
@@ -313,6 +164,209 @@ export default function DashboardView({
             />
           </div>
         </div>
+
+        {/* Live Database Activity & Field Dispatch Stream (12-col Grid) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+          {/* Left: Recent Incoming Incidents & Reports (7 cols) */}
+          <div className="lg:col-span-7 bg-surface-container-lowest p-5 sm:p-6 rounded-3xl border border-outline-variant/60 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-[20px]">dynamic_feed</span>
+                  <h3 className="font-title-md font-bold text-on-surface text-[16px]">
+                    Recent Incidents &amp; Citizen Reports
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigateView && onNavigateView('incidents')}
+                  className="text-primary hover:text-primary/80 font-bold text-[12px] flex items-center gap-1 hover:underline cursor-pointer"
+                >
+                  <span>View All ({incidents.length})</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
+              </div>
+
+              {recentIncidents.length > 0 ? (
+                <div className="divide-y divide-outline-variant/40">
+                  {recentIncidents.map((item) => {
+                    const isCritical = item.severity === 'critical';
+                    const isHigh = item.severity === 'high';
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => onSelectIncident && onSelectIncident(item)}
+                        className="py-3.5 flex items-center justify-between gap-3 hover:bg-surface-container-low/50 px-2 rounded-xl transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.title}
+                              className="w-11 h-11 rounded-xl object-cover border border-outline-variant shrink-0"
+                            />
+                          ) : (
+                            <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                              <span className="material-symbols-outlined text-[20px]">report_problem</span>
+                            </div>
+                          )}
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-[13.5px] text-on-surface truncate group-hover:text-primary transition-colors">
+                                {item.title}
+                              </h4>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase shrink-0 ${
+                                  isCritical
+                                    ? 'bg-error-container text-on-error-container'
+                                    : isHigh
+                                    ? 'bg-[#ffedd5] text-risk-high'
+                                    : 'bg-primary-container text-on-primary-container'
+                                }`}
+                              >
+                                {item.severity || 'Moderate'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11.5px] text-outline mt-0.5 truncate">
+                              <span className="font-data-mono">{item.id}</span>
+                              <span>•</span>
+                              <span>{item.sector || 'Winneba Catchment'}</span>
+                              <span>•</span>
+                              <span>{item.reportedAt || 'Recent'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          {onLocateOnMap && (
+                            <button
+                              type="button"
+                              onClick={() => onLocateOnMap(item)}
+                              title="See exact incident location on GIS map"
+                              className="px-2.5 py-1.5 rounded-xl bg-primary/10 hover:bg-primary hover:text-white text-primary text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1 border border-primary/20"
+                            >
+                              <span className="material-symbols-outlined text-[15px]">explore</span>
+                              <span>See Map</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onSelectIncident && onSelectIncident(item)}
+                            className="bg-surface-container hover:bg-surface-container-high text-on-surface px-2.5 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition-colors"
+                          >
+                            Inspect
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-outline text-[13px]">
+                  No recent incidents recorded in database.
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-outline-variant/40 mt-2 flex items-center justify-between text-[12px] text-outline">
+              <span>Synchronized with Supabase <code>reports</code> &amp; <code>incidents</code></span>
+              <span className="font-data-mono text-primary font-bold">● Active Feed</span>
+            </div>
+          </div>
+
+          {/* Right: Active Field Response Units (5 cols) */}
+          <div className="lg:col-span-5 bg-surface-container-lowest p-5 sm:p-6 rounded-3xl border border-outline-variant/60 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-[20px]">groups</span>
+                  <h3 className="font-title-md font-bold text-on-surface text-[16px]">
+                    Field Response Units
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigateView && onNavigateView('field-teams')}
+                  className="text-primary hover:text-primary/80 font-bold text-[12px] flex items-center gap-1 hover:underline cursor-pointer"
+                >
+                  <span>Teams ({fieldTeams.length})</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
+              </div>
+
+              {activeTeams.length > 0 ? (
+                <div className="space-y-3">
+                  {activeTeams.map((team) => {
+                    const isOnMission = team.status === 'On Mission' || team.status === 'Busy';
+                    return (
+                      <div
+                        key={team.id}
+                        className="bg-surface-container-low p-3.5 rounded-2xl border border-outline-variant/50 flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-[13px] shrink-0">
+                            {team.name ? team.name.charAt(0) : 'T'}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-[13px] text-on-surface truncate">
+                              {team.name}
+                            </div>
+                            <div className="text-[11px] text-on-surface-variant truncate">
+                              Lead: {team.lead} • {team.vehicle || 'Truck'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
+                              isOnMission
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                isOnMission ? 'bg-blue-600' : 'bg-emerald-600'
+                              }`}
+                            ></span>
+                            {team.status || 'Available'}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => onDispatchAction && onDispatchAction({ teamId: team.id, teamName: team.name })}
+                            className="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary cursor-pointer"
+                            title="Dispatch this crew"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">send</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-outline text-[13px]">
+                  No field teams provisioned in database.
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-outline-variant/40 mt-3 flex items-center justify-between text-[12px]">
+              <span className="text-outline">Ready for emergency desilting &amp; breach clearance</span>
+              <button
+                type="button"
+                onClick={() => onNavigateView && onNavigateView('dispatch')}
+                className="text-primary font-bold hover:underline cursor-pointer text-[12px]"
+              >
+                Open Dispatch Board →
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
