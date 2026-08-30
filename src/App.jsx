@@ -219,11 +219,49 @@ export default function App() {
       zoom: 14
     };
 
-  // Dispatch handler
+  // Dispatch handler - marks target incident/segment as in-progress immediately
   const handleConfirmDispatch = async (dispatchData) => {
+    const targetId = dispatchData.drainId || dispatchData.id;
+
+    // Optimistically update incident state to in-progress
+    setIncidents((prev) =>
+      prev.map((inc) => {
+        if (
+          inc.id === targetId ||
+          inc.rawId === targetId ||
+          inc.drainId === targetId ||
+          inc.title === targetId ||
+          targetId?.toString().includes(inc.id?.toString())
+        ) {
+          return { ...inc, status: 'in-progress', rawStatus: 'IN_PROGRESS', assignedTeamId: dispatchData.teamId };
+        }
+        return inc;
+      })
+    );
+
+    // Optimistically update drainage segments
+    setDrainageSegments((prev) =>
+      prev.map((seg) => {
+        if (seg.id === targetId || seg.name === targetId) {
+          return { ...seg, status: 'In-Progress', assignedTeamId: dispatchData.teamId };
+        }
+        return seg;
+      })
+    );
+
+    // Optimistically update field team status
+    setFieldTeams((prev) =>
+      prev.map((team) => {
+        if (team.id === dispatchData.teamId) {
+          return { ...team, status: 'On Mission', activeTasks: (team.activeTasks || 0) + 1 };
+        }
+        return team;
+      })
+    );
+
     const result = await dataService.dispatchTeam(dispatchData);
     if (result.success) {
-      showToast(`✓ Field Team dispatched successfully to Drain ${dispatchData.drainId}!`);
+      showToast(`✓ Field Team dispatched! Target marked as In Progress.`);
       await loadData(selectedMunicipalityId);
     }
   };

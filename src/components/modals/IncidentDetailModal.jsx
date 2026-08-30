@@ -171,7 +171,21 @@ export default function IncidentDetailModal({
             </div>
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
               <span className="text-outline font-semibold block text-[11px]">Current Status</span>
-              <div className="capitalize font-bold text-on-surface mt-0.5">{incident.rawStatus || incident.status}</div>
+              <div className="capitalize font-bold text-on-surface mt-0.5 flex items-center gap-1.5">
+                {incident.status === 'in-progress' || incident.rawStatus === 'IN_PROGRESS' ? (
+                  <span className="inline-flex items-center gap-1.5 text-amber-700 font-bold">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                    <span>In Progress</span>
+                  </span>
+                ) : incident.status === 'resolved' ? (
+                  <span className="inline-flex items-center gap-1.5 text-primary font-bold">
+                    <span className="w-2 h-2 rounded-full bg-primary"></span>
+                    <span>Resolved</span>
+                  </span>
+                ) : (
+                  <span>{incident.rawStatus || incident.status}</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -227,13 +241,21 @@ export default function IncidentDetailModal({
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold transition-all whitespace-nowrap ${
                 incident.status === 'resolved'
                   ? 'bg-surface-container-high text-outline cursor-not-allowed opacity-60'
+                  : incident.status === 'in-progress'
+                  ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer'
                   : 'bg-primary hover:bg-primary/95 text-white shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer'
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">
-                {incident.status === 'resolved' ? 'check_circle' : 'send'}
+                {incident.status === 'resolved' ? 'check_circle' : incident.status === 'in-progress' ? 'engineering' : 'send'}
               </span>
-              <span>{incident.status === 'resolved' ? 'Resolved' : 'Dispatch Team'}</span>
+              <span>
+                {incident.status === 'resolved'
+                  ? 'Resolved'
+                  : incident.status === 'in-progress'
+                  ? 'In Progress (Re-assign)'
+                  : 'Dispatch Team'}
+              </span>
             </button>
           </div>
         </div>

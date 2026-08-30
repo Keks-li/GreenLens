@@ -90,9 +90,14 @@ const mapReportToIncident = (report) => {
   let uiStatus = 'unresolved';
   if (report.status === 'RESOLVED' || report.status === 'CLOSED') {
     uiStatus = 'resolved';
-  } else if (report.status === 'ACCEPTED' || report.status === 'CONVERTED_TO_INCIDENT') {
+  } else if (
+    report.status === 'IN_PROGRESS' ||
+    report.status === 'DISPATCHED' ||
+    report.status === 'ACCEPTED' ||
+    report.status === 'CONVERTED_TO_INCIDENT'
+  ) {
     uiStatus = 'in-progress';
-  } else if (report.status === 'UNDER_REVIEW' || report.status === 'AI_ANALYZING') {
+  } else if (report.status === 'UNDER_REVIEW' || report.status === 'ASSIGNED' || report.status === 'AI_ANALYZING') {
     uiStatus = 'assigned';
   } else {
     uiStatus = 'unresolved';
@@ -786,6 +791,7 @@ export const dataService = {
   // Dispatch a field team to a drain / incident
   async dispatchTeam({ drainId, teamId, priority = 'High', deadlineHours = 4, instructions = '' }) {
     const missionId = `MSN-${Math.floor(8000 + Math.random() * 1000)}`;
+    const timestamp = new Date().toISOString();
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -796,36 +802,53 @@ export const dataService = {
           drain_id: drainId,
           team_id: teamId,
           municipality_id: 'winneba',
-          target_location: `Drain Segment ${drainId}`,
+          target_location: `Drain Segment / Incident ${drainId}`,
           priority: priority,
           deadline_hours: deadlineHours,
           time_remaining: `${deadlineHours}h 00m`,
           instructions: instructions,
           equipment: priority === 'Critical' ? 'Hydro-jet + Vac Truck' : 'Excavator & Flatbed',
-          progress: 10,
-          status: 'dispatched',
+          progress: 15,
+          status: 'in_progress',
           dispatched_by: 'Command Lead (You)'
         }]);
 
-        // 2. Update drain status
-        await supabase.from('drainage_segments')
-          .update({ status: 'Dispatched', assigned_team_id: teamId, updated_at: new Date().toISOString() })
+        // 2. If it's a citizen report (e.g. REP-043 or 43), update reports table status to IN_PROGRESS
+        if (typeof drainId === 'string' && drainId.startsWith('REP-')) {
+          const rawId = parseInt(drainId.replace('REP-', ''), 10);
+          await supabase.from('reports')
+            .update({ status: 'IN_PROGRESS', assigned_team_id: teamId, updated_at: timestamp })
+            .eq('id', rawId);
+        } else if (!isNaN(Number(drainId))) {
+          await supabase.from('reports')
+            .update({ status: 'IN_PROGRESS', assigned_team_id: teamId, updated_at: timestamp })
+            .eq('id', Number(drainId));
+        }
+
+        // 3. Update incidents table if target matches an incident record
+        await supabase.from('incidents')
+          .update({ status: 'in-progress', assigned_team_id: teamId, updated_at: timestamp })
           .eq('id', drainId);
 
-        // 3. Update field team status
+        // 4. Update drainage segment status if target matches a drain
+        await supabase.from('drainage_segments')
+          .update({ status: 'In-Progress', assigned_team_id: teamId, updated_at: timestamp })
+          .eq('id', drainId);
+
+        // 5. Update field team status
         await supabase.from('field_teams')
-          .update({ status: 'On Mission' })
+          .update({ status: 'On Mission', active_tasks: 1, updated_at: timestamp })
           .eq('id', teamId);
 
-        // 4. Log audit event
+        // 6. Log audit event
         await this.addAuditLog({
           user: 'Command Lead (You)',
           action: 'TEAM_DISPATCHED',
-          entity: `Drain ${drainId}`,
-          details: `Assigned team ${teamId} with ${priority} priority (${deadlineHours}h window).`
+          entity: `Target ${drainId}`,
+          details: `Assigned team ${teamId} with ${priority} priority (${deadlineHours}h window). Status set to In Progress.`
         });
 
-        return { success: true, missionId };
+        return { success: true, missionId, status: 'in-progress' };
       } catch (err) {
         console.error('Supabase dispatch error:', err);
       }
