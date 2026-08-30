@@ -631,6 +631,90 @@ export const dataService = {
     return [];
   },
 
+  // Default Field Operations Teams including Bus Stop Boys and specialized municipal units
+  defaultTeams: [
+    {
+      id: 'team-bsb',
+      name: 'Bus Stop Boys Rapid Response Crew',
+      lead: 'Kwame Appiah (Captain)',
+      specialization: 'High-Density Urban Drainage & Rapid Sludge Desilting',
+      membersCount: 12,
+      status: 'Available',
+      currentLocation: 'Winneba Lorry Station / Bus Stop Junction',
+      vehicle: 'Flatbed Truck + Desilting Jet (GH-4412-24)',
+      rating: 4.9,
+      activeTasks: 0,
+      contact: '+233 24 819 4022',
+      radioChannel: 'VHF Ch 04 (BusStop-Direct)',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+      vehicleImageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      id: 'team-alpha',
+      name: 'Rapid Response Alpha',
+      lead: 'Emmanuel Darko',
+      specialization: 'Hydro-jetting, Culvert Flushing & Heavy Sump Evacuation',
+      membersCount: 8,
+      status: 'On Mission',
+      currentLocation: 'Central Market Flood Basin',
+      vehicle: 'Isuzu Vac-Jet Tanker (GT-8812-23)',
+      rating: 4.9,
+      activeTasks: 1,
+      contact: '+233 24 555 0192',
+      radioChannel: 'VHF Ch 01 (Command-Tac)',
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+      vehicleImageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      id: 'team-bravo',
+      name: 'Rapid Response Bravo',
+      lead: 'Kofi Boateng',
+      specialization: 'Manual Channel Desilting, Trash Sieve Extraction & Boom Repair',
+      membersCount: 10,
+      status: 'Available',
+      currentLocation: 'Mankessim Road Depot',
+      vehicle: 'Mitsubishi Heavy Tipper (CR-3301-22)',
+      rating: 4.8,
+      activeTasks: 0,
+      contact: '+233 20 888 4120',
+      radioChannel: 'VHF Ch 02 (Desilt-Alpha)',
+      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
+      vehicleImageUrl: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      id: 'team-eco',
+      name: 'Eco-Warriors Volunteer Brigade',
+      lead: 'Abena Osei',
+      specialization: 'Plastic Waste Interception & Sachet Bag Community Cleanups',
+      membersCount: 25,
+      status: 'Available',
+      currentLocation: 'University of Education South Campus Drain',
+      vehicle: 'Utility Vans & Heavy Push Carts',
+      rating: 5.0,
+      activeTasks: 0,
+      contact: '+233 55 333 9011',
+      radioChannel: 'VHF Ch 05 (Volunteer-Net)',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      vehicleImageUrl: 'https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      id: 'team-eng',
+      name: 'Engineering & Sluice Maintenance Team',
+      lead: 'Ing. Samuel Mensah',
+      specialization: 'Sluice Gate Hydraulics, Concrete Armor Repair & Excavation',
+      membersCount: 6,
+      status: 'Standby',
+      currentLocation: 'Winneba Municipal Works Yard',
+      vehicle: 'CAT 320 Excavator + Lowbed (GH-9901-21)',
+      rating: 4.9,
+      activeTasks: 0,
+      contact: '+233 24 777 6533',
+      radioChannel: 'VHF Ch 03 (Heavy-Ops)',
+      avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80',
+      vehicleImageUrl: 'https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&w=600&q=80'
+    }
+  ],
+
   // Fetch available field teams
   async getFieldTeams(municipalityId = 'winneba') {
     if (isSupabaseConfigured && supabase) {
@@ -641,13 +725,19 @@ export const dataService = {
         }
         const { data, error } = await query.order('name');
         if (!error && data?.length) {
-          return data.map(mapFieldTeam);
+          const dbTeams = data.map(mapFieldTeam);
+          // Check if Bus Stop Boys is in DB, otherwise merge default rich teams
+          const hasBsb = dbTeams.some(t => t.id === 'team-bsb' || t.name.includes('Bus Stop'));
+          if (!hasBsb) {
+            return [...this.defaultTeams.filter(t => t.id === 'team-bsb'), ...dbTeams];
+          }
+          return dbTeams;
         }
       } catch (err) {
         console.error('Supabase getFieldTeams error:', err);
       }
     }
-    return [];
+    return this.defaultTeams;
   },
 
   // Update Field Team status

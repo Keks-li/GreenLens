@@ -48,7 +48,7 @@ export default function DashboardView({
   const recentIncidents = (incidents || []).slice(0, 5);
 
   // Active or top field teams directly from database
-  const activeTeams = (fieldTeams || []).slice(0, 4);
+  const activeTeams = (fieldTeams || []).slice(0, 5);
 
   // Dynamic time-of-day greeting
   const hour = new Date().getHours();
@@ -320,9 +320,9 @@ export default function DashboardView({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                               isOnMission
                                 ? 'bg-blue-100 text-blue-800'
                                 : 'bg-emerald-100 text-emerald-800'
@@ -336,13 +336,23 @@ export default function DashboardView({
                             {team.status || 'Available'}
                           </span>
 
+                          {team.contact && (
+                            <a
+                              href={`tel:${team.contact.replace(/\s+/g, '')}`}
+                              className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-pointer flex items-center justify-center transition-all hover:scale-105"
+                              title={`Call Lead ${team.lead} (${team.contact})`}
+                            >
+                              <span className="material-symbols-outlined text-[15px] text-emerald-700">call</span>
+                            </a>
+                          )}
+
                           <button
                             type="button"
-                            onClick={() => onDispatchAction && onDispatchAction({ teamId: team.id, teamName: team.name })}
-                            className="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary cursor-pointer"
+                            onClick={() => onDispatchAction && onDispatchAction({ teamId: team.id, teamName: team.name, drainName: `Directive to ${team.name}` })}
+                            className="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary cursor-pointer transition-all hover:scale-105"
                             title="Dispatch this crew"
                           >
-                            <span className="material-symbols-outlined text-[16px]">send</span>
+                            <span className="material-symbols-outlined text-[15px]">send</span>
                           </button>
                         </div>
                       </div>

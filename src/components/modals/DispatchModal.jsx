@@ -94,13 +94,18 @@ export default function DispatchModal({
 
           {/* Field Team Selection */}
           <div>
-            <label className="block text-body-sm font-semibold text-on-surface mb-1.5 text-[13px]">
-              Select Field Team (Live Database)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-body-sm font-semibold text-on-surface text-[13px]">
+                Select Field Team (Live Database)
+              </label>
+              <span className="text-[11px] text-primary font-bold">
+                {teams.length} Squads Registered
+              </span>
+            </div>
             <select
               value={selectedTeamId}
               onChange={(e) => setSelectedTeamId(e.target.value)}
-              className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-3.5 py-2.5 text-body-sm focus:ring-2 focus:ring-primary focus:outline-none"
+              className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-3.5 py-2.5 text-body-sm focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer mb-2.5"
             >
               {teams.map((team) => (
                 <option key={team.id} value={team.id}>
@@ -108,6 +113,34 @@ export default function DispatchModal({
                 </option>
               ))}
             </select>
+
+            {/* Selected Squad Direct Contact HUD */}
+            {(() => {
+              const currentTeam = teams.find((t) => t.id === selectedTeamId) || teams[0];
+              if (!currentTeam) return null;
+              return (
+                <div className="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200/90 flex items-center justify-between gap-3 text-[12px]">
+                  <div className="min-w-0">
+                    <div className="font-bold text-emerald-950 truncate">
+                      Squad Lead: {currentTeam.lead} ({currentTeam.name})
+                    </div>
+                    <div className="text-[11px] text-emerald-800 font-data-mono mt-0.5">
+                      📞 {currentTeam.contact} • 📻 {currentTeam.radioChannel || 'VHF Ch 01 (Command-Tac)'}
+                    </div>
+                  </div>
+                  {currentTeam.contact && (
+                    <a
+                      href={`tel:${currentTeam.contact.replace(/\s+/g, '')}`}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] shrink-0 shadow-2xs transition-transform hover:scale-105"
+                      title="Call squad lead directly"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">call</span>
+                      <span>Call Lead</span>
+                    </a>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Priority & Deadline Grid */}

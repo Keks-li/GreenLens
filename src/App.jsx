@@ -145,9 +145,22 @@ export default function App() {
       ]);
 
       if (munisRes?.length) setMunicipalitiesList(munisRes);
-      if (kpiRes) setKpis(kpiRes);
+      const liveIncidents = incRes || [];
+      if (incRes) setIncidents(liveIncidents);
+      if (kpiRes) {
+        setKpis({
+          ...kpiRes,
+          reportsToday: {
+            ...kpiRes.reportsToday,
+            value: liveIncidents.length || kpiRes.reportsToday?.value || 0
+          },
+          criticalIncidents: {
+            ...kpiRes.criticalIncidents,
+            value: liveIncidents.filter(i => i.severity === 'critical' || i.severity === 'high').length
+          }
+        });
+      }
       if (drainsRes) setDrainageSegments(drainsRes);
-      if (incRes) setIncidents(incRes);
       if (aiRes) setPriorityActions(aiRes);
       if (teamsRes) setFieldTeams(teamsRes);
       if (dispRes) setDispatches(dispRes);

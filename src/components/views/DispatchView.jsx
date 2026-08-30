@@ -176,18 +176,32 @@ export default function DispatchView({
                   <span className="text-[12px] text-primary font-bold bg-primary-container/30 px-2 py-0.5 rounded-full">★ {team.rating}</span>
                 </div>
 
-                <h4 className="font-bold text-on-surface text-[15px]">{team.name}</h4>
-                <p className="text-[12px] text-on-surface-variant mb-2">Lead: <strong>{team.lead}</strong></p>
-                <div className="text-[11px] text-outline bg-surface-container-low p-2 rounded-xl border border-outline-variant/30 mb-3 font-medium">
+                <h4 className="font-bold text-on-surface text-[14.5px] leading-snug">{team.name}</h4>
+                <p className="text-[11.5px] text-on-surface-variant mb-1.5">Lead: <strong>{team.lead}</strong></p>
+                <div className="text-[11px] text-outline bg-surface-container-low p-2 rounded-xl border border-outline-variant/30 mb-2 font-medium truncate">
                   {team.vehicle}
                 </div>
+                {team.contact && (
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-data-mono text-primary font-bold">{team.contact}</span>
+                    <a
+                      href={`tel:${team.contact.replace(/\s+/g, '')}`}
+                      className="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-pointer flex items-center justify-center transition-all"
+                      title={`Call ${team.lead}`}
+                    >
+                      <span className="material-symbols-outlined text-[14px] text-emerald-700">call</span>
+                    </a>
+                  </div>
+                )}
               </div>
 
               <button
-                onClick={() => onOpenDispatchModal && onOpenDispatchModal({ id: team.id, name: team.name })}
-                className="w-full bg-surface-container hover:bg-primary hover:text-white text-on-surface font-label-caps text-[11px] py-2 rounded-full transition-all font-bold cursor-pointer"
+                type="button"
+                onClick={() => onOpenDispatchModal && onOpenDispatchModal({ id: team.id, name: team.name, drainName: `Directive to ${team.name}` })}
+                className="w-full bg-surface-container hover:bg-primary hover:text-white text-on-surface font-label-caps text-[11px] py-2 rounded-xl transition-all font-bold cursor-pointer flex items-center justify-center gap-1.5"
               >
-                Assign Directive
+                <span className="material-symbols-outlined text-[15px]">send</span>
+                <span>Assign Directive</span>
               </button>
             </div>
           ))}
