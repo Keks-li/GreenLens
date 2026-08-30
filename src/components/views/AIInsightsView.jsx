@@ -52,11 +52,11 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
       {/* Main Simulation Control Canvas (12 cols) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         {/* Simulation Controls (Left 5 cols) */}
-        <div className="xl:col-span-5 bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/60 shadow-xs space-y-6">
+        <div className="xl:col-span-5 bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/60 shadow-card-soft space-y-6">
           <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
             <h3 className="font-title-md text-[17px] font-bold text-on-surface">Simulation Parameters</h3>
-            <span className="text-[11px] font-bold uppercase bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-data-mono">
-              Model v3.4 (Ghana Central)
+            <span className="text-[10.5px] font-bold uppercase bg-primary-container text-on-primary-container px-3 py-0.5 rounded-full font-data-mono">
+              Model v3.4
             </span>
           </div>
 
@@ -75,10 +75,10 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
               onChange={(e) => setRainfallMm(Number(e.target.value))}
               className="w-full accent-primary cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-outline">
-              <span>10 mm (Light Shower)</span>
-              <span>60 mm (Heavy Storm)</span>
-              <span>120 mm (Severe Deluge)</span>
+            <div className="flex justify-between text-[10px] text-outline font-medium">
+              <span>10 mm (Light)</span>
+              <span>60 mm (Heavy)</span>
+              <span>120 mm (Severe)</span>
             </div>
           </div>
 
@@ -97,22 +97,22 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
               onChange={(e) => setDebrisIncreasePercent(Number(e.target.value))}
               className="w-full accent-risk-high cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-outline">
-              <span>0% (Pristine Drains)</span>
-              <span>40% (Current Season Avg)</span>
-              <span>80% (Severe Blockage)</span>
+            <div className="flex justify-between text-[10px] text-outline font-medium">
+              <span>0% (Pristine)</span>
+              <span>40% (Average)</span>
+              <span>80% (Severe)</span>
             </div>
           </div>
 
           {/* Proactive Cleanup Toggle */}
-          <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/40 flex items-center justify-between">
+          <div className="bg-[#f4f7f4] p-4 rounded-2xl border border-[#d5e2d6] flex items-center justify-between">
             <div>
-              <div className="font-semibold text-on-surface text-[13px]">Proactive Clearance Applied</div>
-              <p className="text-[11px] text-on-surface-variant">Simulate dispatching cleanup teams before storm peak</p>
+              <div className="font-bold text-on-surface text-[13px]">Proactive Clearance Applied</div>
+              <p className="text-[11px] text-on-surface-variant font-medium">Simulate dispatching teams before storm peak</p>
             </div>
             <button
               onClick={() => setProactiveCleanApplied(!proactiveCleanApplied)}
-              className={`w-12 h-7 rounded-full transition-colors relative ${
+              className={`w-12 h-7 rounded-full transition-colors relative cursor-pointer ${
                 proactiveCleanApplied ? 'bg-primary' : 'bg-surface-container-highest'
               }`}
             >
@@ -125,17 +125,17 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
           </div>
 
           {/* AI Confidence Metric */}
-          <div className="p-3.5 bg-primary/5 rounded-xl border border-primary/20 flex items-center gap-3">
+          <div className="p-3.5 bg-primary-container/30 rounded-2xl border border-primary/20 flex items-center gap-3">
             <span className="material-symbols-outlined text-primary text-[24px]">verified</span>
             <div className="text-[12px]">
               <span className="font-bold text-on-surface block">94.6% Historical Model Accuracy</span>
-              <span className="text-on-surface-variant">Calibrated against municipal drainage GIS benchmarks.</span>
+              <span className="text-on-surface-variant font-medium">Calibrated against municipal drainage GIS telemetry.</span>
             </div>
           </div>
         </div>
 
         {/* Live Simulation Results (Right 7 cols) */}
-        <div className="xl:col-span-7 bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/60 shadow-xs flex flex-col justify-between space-y-6">
+        <div className="xl:col-span-7 bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/60 shadow-card-soft flex flex-col justify-between space-y-6">
           <div>
             <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3 mb-4">
               <h3 className="font-title-md text-[17px] font-bold text-on-surface">Predicted Inundation Impact</h3>
@@ -144,47 +144,47 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
                   effectiveRisk >= 80
                     ? 'bg-error-container text-on-error-container'
                     : effectiveRisk >= 55
-                    ? 'bg-amber-100 text-amber-900'
+                    ? 'bg-[#ffedd5] text-risk-high'
                     : 'bg-primary-container text-on-primary-container'
                 }`}
               >
-                {effectiveRisk >= 80 ? 'Severe Inundation Warning' : effectiveRisk >= 55 ? 'Moderate Surface Runoff' : 'Controlled Flow'}
+                {effectiveRisk >= 80 ? 'Severe Inundation Warning' : effectiveRisk >= 55 ? 'Moderate Runoff' : 'Controlled Flow'}
               </span>
             </div>
 
             {/* Impact Metric Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-              <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/40">
-                <span className="text-[11px] uppercase font-label-caps text-outline">Risk Score</span>
+              <div className="bg-[#f4f7f4] p-4 rounded-2xl border border-[#d5e2d6]">
+                <span className="text-[10.5px] uppercase font-label-caps text-outline font-bold">Risk Score</span>
                 <div
-                  className={`text-[26px] font-bold font-data-mono mt-1 ${
+                  className={`text-[26px] font-extrabold font-data-mono mt-1 ${
                     effectiveRisk >= 80 ? 'text-risk-critical' : effectiveRisk >= 55 ? 'text-risk-high' : 'text-primary'
                   }`}
                 >
                   {effectiveRisk}/100
                 </div>
-                <span className="text-[11px] text-on-surface-variant">Overall Municipal Index</span>
+                <span className="text-[11px] text-on-surface-variant font-medium">Municipal Index</span>
               </div>
 
-              <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/40">
-                <span className="text-[11px] uppercase font-label-caps text-outline">Critical Segments</span>
-                <div className="text-[26px] font-bold text-risk-critical font-data-mono mt-1">
+              <div className="bg-[#f4f7f4] p-4 rounded-2xl border border-[#d5e2d6]">
+                <span className="text-[10.5px] uppercase font-label-caps text-outline font-bold">Critical Segments</span>
+                <div className="text-[26px] font-extrabold text-risk-critical font-data-mono mt-1">
                   {criticalDrainsCount} Drains
                 </div>
-                <span className="text-[11px] text-on-surface-variant">Over-capacity risk</span>
+                <span className="text-[11px] text-on-surface-variant font-medium">Over-capacity risk</span>
               </div>
 
-              <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/40 col-span-2 sm:col-span-1">
-                <span className="text-[11px] uppercase font-label-caps text-outline">Pop. Affected</span>
-                <div className="text-[26px] font-bold text-on-surface font-data-mono mt-1">
+              <div className="bg-[#f4f7f4] p-4 rounded-2xl border border-[#d5e2d6] col-span-2 sm:col-span-1">
+                <span className="text-[10.5px] uppercase font-label-caps text-outline font-bold">Pop. Affected</span>
+                <div className="text-[26px] font-extrabold text-on-surface font-data-mono mt-1">
                   ~{affectedPopulation.toLocaleString()}
                 </div>
-                <span className="text-[11px] text-on-surface-variant">Traders &amp; Residents</span>
+                <span className="text-[11px] text-on-surface-variant font-medium">Traders &amp; Residents</span>
               </div>
             </div>
 
             {/* Simulation Narrative */}
-            <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/40 text-[13px] leading-relaxed space-y-2">
+            <div className="bg-[#f4f7f4] p-4 rounded-2xl border border-[#d5e2d6] text-[13px] leading-relaxed space-y-2">
               <div className="font-bold text-on-surface flex items-center gap-1.5 text-[14px]">
                 <span className="material-symbols-outlined text-primary text-[18px]">auto_awesome</span>
                 AI Hydraulic Forecast Summary
@@ -197,14 +197,14 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
                     <strong className="text-on-surface">{cp.name || cp.id} ({cp.sector})</strong>
                   </span>
                 ))}{' '}
-                will exceed maximum hydraulic throughput within 45 minutes of storm onset.
+                will exceed maximum hydraulic throughput within 45 minutes.
               </p>
               {proactiveCleanApplied ? (
-                <p className="text-primary font-semibold bg-primary/10 p-2.5 rounded-lg">
+                <p className="text-primary font-bold bg-primary-container p-3 rounded-xl border border-[#bbf7d0]">
                   ✓ Proactive clearance mitigates estimated flood extent by 68%, safeguarding critical community corridors.
                 </p>
               ) : (
-                <p className="text-risk-critical font-semibold bg-error-container/40 p-2.5 rounded-lg">
+                <p className="text-risk-critical font-bold bg-error-container/60 p-3 rounded-xl border border-risk-critical/20">
                   ⚠️ Action Required: Without pre-storm clearance, surface runoff will overflow onto arterial transport links.
                 </p>
               )}
@@ -212,10 +212,10 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
           </div>
 
           <div className="pt-3 border-t border-outline-variant/40 flex items-center justify-between">
-            <span className="text-[12px] text-outline font-data-mono">Est. Runoff: {estimatedWaterVolume.toLocaleString()} m³</span>
+            <span className="text-[12px] text-outline font-data-mono font-medium">Est. Runoff: {estimatedWaterVolume.toLocaleString()} m³</span>
             <button
               onClick={() => onOpenDispatch && onOpenDispatch(topChokePoints[0] || { id: 'D-102', name: 'Simulated Choke Points' })}
-              className="bg-primary text-on-primary px-5 py-2 rounded-xl text-[12px] font-label-caps hover:bg-surface-tint shadow-xs flex items-center gap-2 cursor-pointer"
+              className="bg-primary text-white px-5 py-2.5 rounded-full text-[11.5px] font-label-caps hover:bg-primary/90 shadow-2xs flex items-center gap-2 font-bold cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px]">local_shipping</span>
               Dispatch Proactive Teams

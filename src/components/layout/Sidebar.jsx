@@ -70,16 +70,18 @@ export default function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-surface-container-low select-none">
+    <div className="flex flex-col h-full bg-surface-container-low/80 backdrop-blur-md select-none border-r border-outline-variant/60">
       {/* Brand Header */}
-      <div className="p-5 sm:p-6 flex items-center justify-between border-b border-outline-variant mb-2">
+      <div className="p-5 sm:p-6 flex items-center justify-between border-b border-outline-variant/50 mb-2">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-xs">
-            <span className="material-symbols-outlined text-primary text-[24px]">energy_savings_leaf</span>
+          <div className="h-10 w-10 rounded-2xl bg-primary flex items-center justify-center shadow-md shadow-primary/20 text-white">
+            <span className="material-symbols-outlined text-[24px]">energy_savings_leaf</span>
           </div>
           <div className="flex flex-col">
-            <span className="font-title-md text-primary leading-tight font-bold tracking-tight">GreenLens</span>
-            <span className="text-[10px] uppercase font-label-caps text-on-surface-variant tracking-[1px]">
+            <span className="font-title-md text-on-surface leading-tight font-bold tracking-tight text-[18px]">
+              Green<span className="text-primary">Lens</span>
+            </span>
+            <span className="text-[10px] uppercase font-label-caps text-on-surface-variant font-bold tracking-[1.2px]">
               Command Center
             </span>
           </div>
@@ -88,17 +90,17 @@ export default function Sidebar({
         {/* Mobile close button */}
         <button
           onClick={onCloseMobile}
-          className="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container lg:hidden"
+          className="p-2 rounded-xl text-outline hover:text-on-surface hover:bg-surface-container lg:hidden transition-colors"
         >
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 px-4 flex flex-col gap-1 pb-4 overflow-y-auto">
+      <nav className="flex-1 px-3 flex flex-col gap-1 pb-4 overflow-y-auto">
         {navSections.map((section) => (
           <div key={section.title} className="flex flex-col">
-            <div className="text-label-caps text-outline uppercase px-4 py-2 mt-3 tracking-wider text-[11px]">
+            <div className="text-label-caps text-outline uppercase px-3 py-2 mt-3 tracking-wider text-[10px] font-bold">
               {section.title}
             </div>
             {section.items.map((item) => {
@@ -107,30 +109,30 @@ export default function Sidebar({
                 <button
                   key={item.id}
                   onClick={() => handleSelectNav(item.id)}
-                  className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all text-left gap-3 ${
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-left gap-3 ${
                     isActive
-                      ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm'
-                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                      ? 'bg-primary text-white font-semibold shadow-sm shadow-primary/20'
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <span
                       className={`material-symbols-outlined text-[20px] ${
-                        isActive ? 'text-on-primary-container' : 'text-outline'
+                        isActive ? 'text-white' : 'text-outline'
                       }`}
                     >
                       {item.icon}
                     </span>
-                    <span className="text-body-sm">{item.label}</span>
+                    <span className="text-body-sm text-[13.5px]">{item.label}</span>
                   </div>
                   {item.badge && (
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         isActive
-                          ? 'bg-on-primary-container/20 text-on-primary-container'
+                          ? 'bg-white/20 text-white'
                           : item.id === 'incidents' || item.id === 'alerts'
                           ? 'bg-error-container text-on-error-container'
-                          : 'bg-primary/10 text-primary'
+                          : 'bg-primary-container text-on-primary-container'
                       }`}
                     >
                       {item.badge}
@@ -144,21 +146,21 @@ export default function Sidebar({
       </nav>
 
       {/* User Profile / Status */}
-      <div className="mt-auto p-4 border-t border-outline-variant/60 bg-surface-container-low">
-        <div className="bg-surface-container-high rounded-xl p-3 flex items-center justify-between gap-2 border border-outline-variant/40 hover:bg-surface-container-highest transition-colors">
+      <div className="mt-auto p-4 border-t border-outline-variant/50 bg-surface-container-low/90">
+        <div className="bg-surface-container-lowest rounded-2xl p-3.5 flex items-center justify-between gap-2 border border-outline-variant/60 shadow-card-soft hover:shadow-md transition-all">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-xs shrink-0 font-bold text-[12px]">
+            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white shadow-xs shrink-0 font-bold text-[13px]">
               {currentUser?.name?.charAt(0) || 'K'}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-body-sm font-semibold text-on-surface truncate text-[13px]">
+              <span className="text-body-sm font-bold text-on-surface truncate text-[13px]">
                 {currentUser?.name?.split('(')[0] || 'Kwame Mensah'}
               </span>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-primary/15 text-primary">
+                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-primary-container text-on-primary-container">
                   {roleInfo.badge}
                 </span>
-                <span className="text-[10px] text-on-surface-variant truncate">
+                <span className="text-[10px] text-on-surface-variant truncate font-medium">
                   {selectedMunicipality?.name?.split(' ')[0] || 'Winneba'}
                 </span>
               </div>
@@ -168,7 +170,7 @@ export default function Sidebar({
           <button
             onClick={onLogout}
             title="Sign Out / Switch Officer"
-            className="p-1.5 rounded-lg text-outline hover:text-risk-critical hover:bg-surface-container transition-colors shrink-0 cursor-pointer"
+            className="p-2 rounded-xl text-outline hover:text-risk-critical hover:bg-error-container/40 transition-colors shrink-0 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">logout</span>
           </button>

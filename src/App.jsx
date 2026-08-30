@@ -315,6 +315,11 @@ export default function App() {
               focusedLocation={focusedLocation}
               priorityActions={priorityActions}
               selectedMunicipality={selectedMunicipality}
+              citizenRewards={citizenRewards}
+              onNavigateView={(v) => {
+                setCurrentView(v);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               onSelectSegment={handleSelectSegment}
               onSelectIncident={handleSelectIncident}
               selectedSegmentId={selectedSegment?.id}

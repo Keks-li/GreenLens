@@ -126,7 +126,7 @@ export default function AlertsView({ currentUser, alertsList: propAlerts, onRefr
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="material-symbols-outlined text-primary text-[24px]">campaign</span>
-            <h1 className="font-headline-lg text-on-surface">Emergency Alerts &amp; Citizen Broadcasts</h1>
+            <h1 className="font-headline-lg text-on-surface font-bold">Emergency Alerts &amp; Citizen Broadcasts</h1>
           </div>
           <p className="font-body-md text-on-surface-variant">
             Live broadcast management for flood hazard alerts, civic directives, and localized sirens.
@@ -136,7 +136,7 @@ export default function AlertsView({ currentUser, alertsList: propAlerts, onRefr
         {canBroadcast && (
           <button
             onClick={() => setShowBroadcastModal(true)}
-            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+            className="bg-primary text-white px-5 py-2.5 rounded-full font-label-caps text-[12px] hover:bg-primary/90 shadow-2xs transition-all flex items-center gap-2 self-start sm:self-auto font-bold cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">broadcast_on_personal</span>
             Broadcast Emergency Alert
@@ -146,41 +146,43 @@ export default function AlertsView({ currentUser, alertsList: propAlerts, onRefr
 
       {/* Active Broadcasts Feed */}
       <div className="space-y-4">
-        <h2 className="font-title-md font-bold text-on-surface text-[18px] flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-risk-critical animate-pulse"></span>
-          Active Public Advisories (Live Database)
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-title-md font-bold text-on-surface text-[18px] flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-risk-critical animate-ping"></span>
+            Active Public Advisories (Live Telemetry)
+          </h2>
+        </div>
 
         <div className="space-y-4">
           {alerts.map((al) => (
             <div
               key={al.id}
-              className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/60 shadow-xs space-y-3"
+              className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/60 shadow-card-soft hover:shadow-card-hover transition-all space-y-3"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase font-data-mono ${
-                    al.severity === 'Critical' ? 'bg-error-container text-on-error-container' : 'bg-amber-100 text-amber-900'
+                  <span className={`px-3 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase font-data-mono ${
+                    al.severity === 'Critical' ? 'bg-error-container text-on-error-container border border-risk-critical/20' : 'bg-[#ffedd5] text-risk-high border border-[#fed7aa]'
                   }`}>
                     {al.severity}
                   </span>
                   <h3 className="font-title-md text-[16px] font-bold text-on-surface">{al.title}</h3>
                 </div>
-                <div className="text-[11px] font-data-mono text-outline">
+                <div className="text-[11px] font-data-mono text-outline font-medium">
                   Issued: {al.issuedAt} • Expires: {al.expiresIn}
                 </div>
               </div>
 
-              <p className="text-[13px] text-on-surface-variant leading-relaxed bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/40">
+              <p className="text-[13px] text-on-surface-variant leading-relaxed bg-[#f4f7f4] p-4 rounded-2xl border border-[#d5e2d6]">
                 {al.message}
               </p>
 
               <div className="flex flex-wrap items-center justify-between gap-3 text-[12px] pt-1">
-                <div className="flex items-center gap-2 text-outline">
-                  <span className="material-symbols-outlined text-[16px]">pin_drop</span>
+                <div className="flex items-center gap-2 text-on-surface-variant">
+                  <span className="material-symbols-outlined text-[16px] text-primary">pin_drop</span>
                   <span>Target Sectors: <strong className="text-on-surface">{al.targetSectors.join(', ')}</strong></span>
                 </div>
-                <div className="flex items-center gap-1.5 text-primary font-bold">
+                <div className="flex items-center gap-1.5 text-primary font-bold bg-primary-container px-3 py-1 rounded-full">
                   <span className="material-symbols-outlined text-[16px]">sensors</span>
                   <span>{al.recipientsNotified?.toLocaleString()} citizens notified</span>
                 </div>

@@ -59,7 +59,7 @@ export default function Header({
   };
 
   return (
-    <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-md border-b border-outline-variant z-40 flex items-center justify-between px-3 sm:px-6 md:px-8 select-none gap-2">
+    <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-md border-b border-outline-variant/60 z-40 flex items-center justify-between px-3 sm:px-6 md:px-8 select-none gap-2">
       {/* Left side: Mobile menu button, Municipality selector & Breadcrumbs */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink overflow-hidden">
         {/* Mobile menu hamburger toggle */}
@@ -73,12 +73,12 @@ export default function Header({
         </button>
 
         {/* Municipality Selector */}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-on-surface-variant text-body-sm bg-surface-container-low px-2.5 sm:px-3 py-1.5 rounded-lg border border-outline-variant/60 shrink-0">
-          <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-primary">location_city</span>
+        <div className="flex items-center gap-1.5 sm:gap-2 text-on-surface-variant text-body-sm bg-surface-container-low px-3 py-1.5 rounded-full border border-outline-variant/70 shadow-2xs shrink-0">
+          <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-primary">location_on</span>
           <select
             value={selectedMunicipalityId}
             onChange={(e) => onSelectMunicipality(e.target.value)}
-            className="bg-transparent font-semibold text-on-surface focus:outline-none cursor-pointer text-[12px] sm:text-[13px] max-w-[120px] sm:max-w-none truncate"
+            className="bg-transparent font-bold text-on-surface focus:outline-none cursor-pointer text-[12px] sm:text-[13px] max-w-[120px] sm:max-w-none truncate"
           >
             {munisList.map((mun) => (
               <option key={mun.id} value={mun.id}>
@@ -92,12 +92,12 @@ export default function Header({
         <nav className="hidden xl:flex items-center gap-1.5 text-on-surface-variant text-[13px] min-w-0 overflow-hidden pl-3 border-l border-outline-variant/60">
           <span
             onClick={() => onNavigateView && onNavigateView('dashboard')}
-            className="hover:text-primary transition-colors cursor-pointer shrink-0 font-medium"
+            className="hover:text-primary transition-colors cursor-pointer shrink-0 font-semibold"
           >
             {currentView === 'dashboard' ? 'Overview' : 'Operations'}
           </span>
           <span className="material-symbols-outlined text-[14px] text-outline shrink-0">chevron_right</span>
-          <span className="text-on-surface font-semibold truncate max-w-[160px]">{getBreadcrumbTitle(currentView)}</span>
+          <span className="text-on-surface font-bold truncate max-w-[160px]">{getBreadcrumbTitle(currentView)}</span>
         </nav>
       </div>
 
@@ -105,18 +105,18 @@ export default function Header({
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-auto">
         {/* Search Input */}
         <div className="relative flex items-center hidden sm:flex">
-          <span className="material-symbols-outlined absolute left-2.5 text-outline text-[17px] pointer-events-none">search</span>
+          <span className="material-symbols-outlined absolute left-3 text-outline text-[17px] pointer-events-none">search</span>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search city data..."
-            className="bg-surface-container-low border border-outline-variant rounded-full pl-8 pr-7 py-1.5 text-[12px] sm:text-[13px] w-28 md:w-40 lg:w-44 xl:w-52 focus:w-36 md:focus:w-48 lg:focus:w-56 transition-all focus:ring-1 focus:ring-primary focus:outline-none placeholder:text-outline"
+            className="bg-surface-container-low border border-outline-variant/80 rounded-full pl-9 pr-7 py-1.5 text-[12px] sm:text-[13px] w-28 md:w-40 lg:w-44 xl:w-52 focus:w-36 md:focus:w-48 lg:focus:w-56 transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none placeholder:text-outline/70"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 text-outline hover:text-on-surface cursor-pointer"
+              className="absolute right-2.5 text-outline hover:text-on-surface cursor-pointer"
             >
               <span className="material-symbols-outlined text-[15px]">close</span>
             </button>
@@ -128,44 +128,44 @@ export default function Header({
           <button
             type="button"
             onClick={() => setShowWeatherPopover(!showWeatherPopover)}
-            className="flex items-center gap-1.5 sm:gap-2 bg-secondary-container/30 border border-secondary/20 px-2 sm:px-3 py-1.5 rounded-full shadow-2xs hover:bg-secondary-container/50 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 bg-[#e0f2fe] border border-[#bae6fd] text-[#0369a1] px-3 py-1.5 rounded-full shadow-2xs hover:bg-[#d0ebfd] transition-all cursor-pointer font-semibold"
             title="Open-Meteo Rainfall & Hydrology Forecast"
           >
-            <span className="material-symbols-outlined text-secondary text-[16px] sm:text-[17px] animate-pulse">cloud</span>
-            <span className="text-body-sm font-bold text-on-secondary-container text-[12px] sm:text-[13px]">{weather?.temp || '28°C'}</span>
-            <span className="text-[11px] text-secondary font-semibold hidden md:inline flex items-center gap-1">
+            <span className="material-symbols-outlined text-[#0284c7] text-[16px] sm:text-[17px] animate-pulse">cloud</span>
+            <span className="text-body-sm font-bold text-[12px] sm:text-[13px]">{weather?.temp || '28°C'}</span>
+            <span className="text-[11px] font-bold hidden md:inline flex items-center gap-1">
               <span>🌧️ {weather?.rain24hMm || '28.5'}mm</span>
             </span>
           </button>
 
           {/* Rainfall Prediction Popover */}
           {showWeatherPopover && (
-            <div className="absolute right-0 top-11 w-80 bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant p-4 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="flex items-center justify-between pb-2 border-b border-outline-variant mb-3">
+            <div className="absolute right-0 top-11 w-80 bg-surface-container-lowest rounded-2xl shadow-card-hover border border-outline-variant p-4 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center justify-between pb-2 border-b border-outline-variant/60 mb-3">
                 <div className="flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-primary text-[18px]">rainy</span>
                   <span className="font-title-md text-[13px] text-on-surface font-bold">Open-Meteo Rainfall Prediction</span>
                 </div>
-                <span className="text-[10px] text-primary font-bold uppercase font-data-mono">Live API</span>
+                <span className="text-[10px] bg-primary-container text-on-primary-container font-bold uppercase px-2 py-0.5 rounded-full font-data-mono">Live API</span>
               </div>
 
               <div className="space-y-2.5 text-[12px]">
-                <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/20 space-y-1">
+                <div className="p-3 rounded-2xl bg-primary-container/20 border border-primary/20 space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-outline">Projected 24h Rainfall:</span>
+                    <span className="text-on-surface-variant font-medium">Projected 24h Rainfall:</span>
                     <span className="font-bold text-risk-critical font-data-mono">{weather?.rain24hMm || '28.5'} mm</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-outline">Precipitation Probability:</span>
+                    <span className="text-on-surface-variant font-medium">Precipitation Probability:</span>
                     <span className="font-bold text-primary font-data-mono">{weather?.rainProbability || '85%'}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-outline">Current Wind &amp; Humidity:</span>
+                    <span className="text-on-surface-variant font-medium">Current Wind &amp; Humidity:</span>
                     <span className="font-semibold text-on-surface">{weather?.wind || '18 km/h'} • {weather?.humidity || '76%'}</span>
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/40">
+                <div className="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/50">
                   <span className="text-[10px] uppercase font-bold text-outline block mb-1">Hydrological Impact Advisory:</span>
                   <p className="text-[11px] text-on-surface-variant leading-relaxed">
                     {weather?.warning || 'Convective storm front detected. High surcharge risk on partially silted culverts.'}
@@ -177,15 +177,15 @@ export default function Header({
         </div>
 
         {/* AI Core Status */}
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-container/20 rounded-full border border-primary/30 shadow-2xs">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-container text-on-primary-container rounded-full border border-[#bbf7d0] shadow-2xs font-semibold">
           <span className="material-symbols-outlined text-primary text-[17px] animate-spin" style={{ animationDuration: '6s' }}>
             temp_preferences_custom
           </span>
-          <span className="text-[10px] font-bold text-primary uppercase tracking-wider hidden sm:inline">AI Active</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">AI Active</span>
         </div>
 
         {/* Notifications Dropdown Drawer */}
-        <div className="flex items-center gap-3 relative">
+        <div className="flex items-center gap-2 relative">
           <button
             onClick={handleToggleNotifications}
             title="Recent Incident & Upload Activities"

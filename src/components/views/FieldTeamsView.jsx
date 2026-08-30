@@ -29,7 +29,7 @@ export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispa
         {teams.map((team) => (
           <div
             key={team.id}
-            className="bg-surface-container-lowest/90 backdrop-blur-md p-6 rounded-3xl shadow-xs border border-outline-variant/60 hover:shadow-md transition-all flex flex-col justify-between"
+            className="bg-surface-container-lowest p-6 rounded-3xl shadow-card-soft border border-outline-variant/60 hover:shadow-card-hover transition-all flex flex-col justify-between"
           >
             <div>
               {/* Team Lead & Status Header */}
@@ -44,24 +44,24 @@ export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispa
                     <h3 className="font-title-md text-[18px] font-bold text-on-surface leading-tight">
                       {team.name}
                     </h3>
-                    <p className="text-[12px] text-on-surface-variant mt-0.5">
-                      Squad Lead: <span className="font-semibold text-on-surface">{team.lead}</span>
+                    <p className="text-[12px] text-on-surface-variant mt-0.5 font-medium">
+                      Squad Lead: <strong className="text-on-surface">{team.lead}</strong>
                     </p>
                   </div>
                 </div>
 
                 <span
-                  className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider font-data-mono ${
+                  className={`px-3 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider font-data-mono ${
                     team.status === 'Available'
-                      ? 'bg-secondary-container text-on-secondary-container'
-                      : 'bg-amber-100 text-amber-900'
+                      ? 'bg-primary-container text-on-primary-container border border-[#bbf7d0]'
+                      : 'bg-[#ffedd5] text-risk-high border border-[#fed7aa]'
                   }`}
                 >
                   {team.status}
                 </span>
               </div>
 
-              {/* Rig Vehicle Preview with Transparent Overlays */}
+              {/* Rig Vehicle Preview */}
               {team.vehicleImageUrl && (
                 <div className="relative rounded-2xl overflow-hidden h-36 mb-4 border border-outline-variant/50 bg-surface-container">
                   <img
@@ -69,7 +69,7 @@ export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispa
                     alt={team.vehicle}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/30 pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none"></div>
                   <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-xl text-white text-[12px] flex justify-between items-center border border-white/15">
                     <span className="font-semibold">{team.vehicle}</span>
                     <span className="text-primary-fixed font-bold">{team.membersCount} Crew Members</span>
@@ -78,28 +78,28 @@ export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispa
               )}
 
               {/* Team Specs */}
-              <div className="space-y-2 text-[13px] bg-surface-container-low/70 backdrop-blur-xs p-4 rounded-2xl border border-outline-variant/40 mb-4">
+              <div className="space-y-2 text-[12.5px] bg-[#f4f7f4] p-4 rounded-2xl border border-[#d5e2d6] mb-4">
                 <div className="flex justify-between">
-                  <span className="text-outline font-medium">Specialization:</span>
-                  <span className="font-semibold text-on-surface text-right">{team.specialization}</span>
+                  <span className="text-on-surface-variant font-medium">Specialization:</span>
+                  <span className="font-bold text-on-surface text-right">{team.specialization}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-outline font-medium">Current Location:</span>
+                  <span className="text-on-surface-variant font-medium">Current Location:</span>
                   <span className="font-semibold text-on-surface">{team.currentLocation}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-outline font-medium">Performance Rating:</span>
-                  <span className="font-bold text-primary font-data-mono">★ {team.rating} / 5.0</span>
+                  <span className="text-on-surface-variant font-medium">Performance Rating:</span>
+                  <span className="font-extrabold text-primary font-data-mono">★ {team.rating} / 5.0</span>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-outline-variant/40">
-              <span className="text-[12px] text-on-surface-variant font-medium">📞 {team.contact}</span>
+            <div className="flex items-center justify-between pt-3 border-t border-outline-variant/40">
+              <span className="text-[12px] text-on-surface-variant font-semibold">📞 {team.contact}</span>
               <button
                 onClick={() => onOpenDispatch && onOpenDispatch({ id: team.id, name: team.name })}
-                className="bg-primary text-on-primary px-4 py-2 rounded-xl text-[12px] font-label-caps hover:bg-surface-tint shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                className="bg-primary text-white px-4 py-2 rounded-full text-[11.5px] font-label-caps hover:bg-primary/90 shadow-2xs transition-all flex items-center gap-1.5 font-bold cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">send</span>
                 Dispatch Directive

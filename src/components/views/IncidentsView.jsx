@@ -139,31 +139,31 @@ export default function IncidentsView({
       </div>
 
       {/* Filters and Search Bar */}
-      <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/60 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-surface-container-lowest p-4 rounded-3xl border border-outline-variant/60 shadow-card-soft flex flex-col md:flex-row gap-4 items-center justify-between">
         {/* Search */}
         <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">search</span>
+          <span className="material-symbols-outlined absolute left-3.5 top-2.5 text-outline text-[18px]">search</span>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search report ID, sector, keywords..."
-            className="w-full bg-surface-container-low border border-outline-variant rounded-xl pl-9 pr-4 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:outline-none"
+            placeholder="Search reports by sector or issue..."
+            className="w-full bg-surface-container-low border border-outline-variant/70 rounded-full pl-10 pr-4 py-2 text-body-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none placeholder:text-outline/70"
           />
         </div>
 
         {/* Filter Dropdowns */}
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           {/* Status Filter */}
-          <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl border border-outline-variant/60 overflow-x-auto max-w-full">
+          <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-full border border-outline-variant/60 overflow-x-auto max-w-full">
             {['all', 'unresolved', 'assigned', 'in-progress', 'resolved'].map((st) => (
               <button
                 key={st}
                 onClick={() => setFilterStatus(st)}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-label-caps uppercase transition-colors shrink-0 whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-full text-[11px] font-label-caps uppercase transition-all shrink-0 whitespace-nowrap cursor-pointer ${
                   filterStatus === st
-                    ? 'bg-primary text-on-primary font-bold shadow-xs'
-                    : 'text-on-surface-variant hover:bg-surface-container'
+                    ? 'bg-primary text-white font-bold shadow-xs'
+                    : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-semibold'
                 }`}
               >
                 {st}
@@ -176,7 +176,7 @@ export default function IncidentsView({
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-body-sm text-on-surface font-semibold focus:outline-none cursor-pointer"
+              className="bg-surface-container-low border border-outline-variant/70 rounded-full px-3.5 py-1.5 text-[12px] text-on-surface font-bold focus:outline-none cursor-pointer"
             >
               <option value="all">All Categories</option>
               {categories.map((c) => (
@@ -191,7 +191,7 @@ export default function IncidentsView({
           <select
             value={filterSeverity}
             onChange={(e) => setFilterSeverity(e.target.value)}
-            className="bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-body-sm text-on-surface font-semibold focus:outline-none cursor-pointer"
+            className="bg-surface-container-low border border-outline-variant/70 rounded-full px-3.5 py-1.5 text-[12px] text-on-surface font-bold focus:outline-none cursor-pointer"
           >
             <option value="all">All Severities</option>
             <option value="critical">🔴 Critical</option>
@@ -208,42 +208,43 @@ export default function IncidentsView({
           <div
             key={inc.id}
             onClick={() => onSelectIncident && onSelectIncident(inc)}
-            className="bg-surface-container-lowest rounded-2xl border border-outline-variant/60 shadow-xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between cursor-pointer group"
+            className="bg-surface-container-lowest rounded-3xl border border-outline-variant/60 shadow-card-soft hover:shadow-card-hover transition-all overflow-hidden flex flex-col justify-between cursor-pointer group"
           >
             <div>
-              {/* Photo Banner with Transparent Tags */}
+              {/* Photo Banner with Clean Tags */}
               <div className="relative h-44 bg-surface-container overflow-hidden">
                 <img
                   src={inc.imageUrl || 'https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?auto=format&fit=crop&w=800&q=80'}
                   alt={inc.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-black/25 pointer-events-none"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none"></div>
 
-                <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap max-w-[85%]">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase font-data-mono ${getSeverityBadge(inc.severity)}`}>
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase font-data-mono ${getSeverityBadge(inc.severity)}`}>
                     {inc.severity}
                   </span>
-                  <span className="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-white/20 font-data-mono">
-                    {inc.category}
-                  </span>
                   {inc.sourceTable === 'reports' && (
-                    <span className="bg-primary/90 text-on-primary text-[9px] font-bold px-2 py-0.5 rounded-full font-label-caps flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[11px]">smartphone</span>
-                      Citizen Scan
+                    <span className="bg-primary text-white text-[9.5px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                      <span>📱 Citizen Scan</span>
                     </span>
                   )}
                 </div>
 
-                <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-black/75 backdrop-blur-md px-2.5 py-1.5 rounded-lg text-white text-[11px] flex justify-between items-center border border-white/10">
-                  <span className="truncate">📍 {inc.sector}</span>
-                  <span className="text-primary-fixed font-bold font-data-mono shrink-0 ml-1">{inc.drainId || 'Winneba Swale'}</span>
+                <div className="absolute bottom-3 left-3 right-3 text-white text-[11.5px] font-semibold flex justify-between items-center">
+                  <span className="truncate flex items-center gap-1 drop-shadow-sm">
+                    <span className="material-symbols-outlined text-[14px] text-primary-fixed">location_on</span>
+                    {inc.sector}
+                  </span>
+                  <span className="bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-data-mono font-bold text-white/90">
+                    {inc.drainId || 'Winneba Swale'}
+                  </span>
                 </div>
               </div>
 
               {/* Card Body */}
               <div className="p-4 space-y-2.5">
-                <div className="flex items-center justify-between text-[11px] text-outline font-data-mono">
+                <div className="flex items-center justify-between text-[11px] text-outline font-data-mono font-medium">
                   <span>{inc.id}</span>
                   <span>{inc.reportedAt}</span>
                 </div>
@@ -252,13 +253,13 @@ export default function IncidentsView({
                   {inc.title}
                 </h3>
 
-                {/* Refuse Type Material Tag */}
+                {/* Refuse Material Tag */}
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                  <span className="text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-primary-container text-on-primary-container border border-[#bbf7d0]">
                     🗑️ {inc.refuseType || inc.category || 'Refuse Material'}
                   </span>
                   {inc.estimatedWasteVolume && (
-                    <span className="text-[10px] font-data-mono text-outline font-semibold">
+                    <span className="text-[10px] font-data-mono text-outline font-semibold bg-surface-container px-2 py-0.5 rounded-full">
                       {inc.estimatedWasteVolume}
                     </span>
                   )}
@@ -268,25 +269,22 @@ export default function IncidentsView({
                   {inc.description}
                 </p>
 
-                <div className="bg-surface-container-low p-2.5 rounded-xl border border-outline-variant/40 text-[11px] flex items-center justify-between">
-                  <span className="text-outline">Reported By:</span>
-                  <span className="font-bold text-on-surface truncate ml-2">{inc.reportedBy}</span>
-                </div>
-
-                {inc.aiRiskAssessment && (
-                  <div className="bg-primary/5 p-2 rounded-xl border border-primary/20 text-[11px] flex items-center justify-between text-primary">
-                    <span className="font-semibold flex items-center gap-1">
+                <div className="flex items-center justify-between text-[11.5px] pt-1">
+                  <span className="text-on-surface-variant">
+                    By <strong className="text-on-surface">{inc.reportedBy?.split(' ')[0] || 'Citizen'}</strong>
+                  </span>
+                  {inc.aiRiskAssessment && (
+                    <span className="font-bold text-primary text-[11px] flex items-center gap-1">
                       <span className="material-symbols-outlined text-[13px]">auto_awesome</span>
-                      AI Risk: {inc.aiRiskAssessment.risk_level || 'Evaluated'}
+                      AI: {inc.aiRiskAssessment.risk_level || 'Active'}
                     </span>
-                    <span className="font-data-mono font-bold">{inc.floodRiskScore ? `${inc.floodRiskScore}% Flood Risk` : 'Live Telemetry'}</span>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Footer / Status Actions */}
-            <div className="px-4 py-3 border-t border-outline-variant/40 bg-surface-container-low/30 flex items-center justify-between">
+            <div className="px-4 py-3 border-t border-outline-variant/40 bg-surface-container-low/40 flex items-center justify-between">
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase font-data-mono ${getStatusBadge(inc.status)}`}>
                 {inc.status}
               </span>
@@ -300,7 +298,7 @@ export default function IncidentsView({
                       e.stopPropagation();
                       onLocateOnMap(inc);
                     }}
-                    className="p-1 rounded-lg text-primary hover:bg-primary/10 text-[11px] font-bold flex items-center gap-0.5 px-2 cursor-pointer transition-colors border border-primary/20"
+                    className="p-1 rounded-full text-primary hover:bg-primary-container text-[11px] font-bold flex items-center gap-0.5 px-2.5 cursor-pointer transition-colors border border-primary/20"
                   >
                     <span className="material-symbols-outlined text-[14px]">explore</span>
                     <span>Map</span>
@@ -310,7 +308,7 @@ export default function IncidentsView({
                 {inc.status !== 'resolved' && (
                   <button
                     onClick={(e) => handleUpdateStatus(inc.id, 'resolved', e)}
-                    className="text-[11px] font-semibold text-primary hover:bg-primary/10 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                    className="text-[11px] font-bold text-primary hover:bg-primary-container px-2.5 py-1 rounded-full transition-colors cursor-pointer"
                   >
                     Resolve
                   </button>
@@ -323,10 +321,10 @@ export default function IncidentsView({
                     e.stopPropagation();
                     if (inc.status !== 'resolved' && onOpenDispatch) onOpenDispatch(inc);
                   }}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-label-caps transition-all flex items-center gap-1 ${
+                  className={`px-3 py-1 rounded-full text-[11px] font-label-caps transition-all flex items-center gap-1 font-bold ${
                     inc.status === 'resolved'
-                      ? 'bg-surface-container-high text-outline cursor-not-allowed opacity-60'
-                      : 'bg-primary text-on-primary hover:bg-surface-tint shadow-xs cursor-pointer'
+                      ? 'bg-surface-container text-outline cursor-not-allowed opacity-60'
+                      : 'bg-primary text-white hover:bg-primary/90 shadow-2xs cursor-pointer'
                   }`}
                 >
                   <span className="material-symbols-outlined text-[14px]">

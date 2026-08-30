@@ -62,10 +62,10 @@ export default function DispatchView({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-title-md font-bold text-on-surface text-[18px] flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-risk-critical animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-ping"></span>
             Active Field Missions ({missions.length} in progress)
           </h2>
-          <span className="text-[11px] font-bold text-outline uppercase font-data-mono">
+          <span className="text-[10.5px] font-bold text-primary bg-primary-container px-3 py-1 rounded-full uppercase font-data-mono">
             Live Telemetry Sync
           </span>
         </div>
@@ -74,55 +74,55 @@ export default function DispatchView({
           {missions.map((msn) => (
             <div
               key={msn.id}
-              className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/60 shadow-xs flex flex-col justify-between"
+              className="bg-surface-container-lowest p-5 sm:p-6 rounded-3xl border border-outline-variant/60 shadow-card-soft hover:shadow-card-hover transition-all flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-data-mono text-[11px] font-bold text-outline">{msn.id}</span>
-                      <span className="bg-error-container text-on-error-container text-[10px] font-bold px-2 py-0.5 rounded font-data-mono uppercase">
+                      <span className="bg-error-container text-on-error-container text-[10px] font-extrabold px-2.5 py-0.5 rounded-full font-data-mono uppercase">
                         {msn.priority}
                       </span>
-                      <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded">
+                      <span className="bg-primary-container text-on-primary-container text-[10px] font-bold px-2.5 py-0.5 rounded-full">
                         {msn.drainId}
                       </span>
                     </div>
-                    <h3 className="font-title-md text-[17px] font-bold text-on-surface mt-1">
+                    <h3 className="font-title-md text-[17px] font-bold text-on-surface mt-1.5">
                       {msn.targetLocation}
                     </h3>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase font-label-caps text-outline">SLA Deadline</span>
-                    <div className="font-data-mono font-bold text-risk-critical text-[14px]">
+                  <div className="text-right bg-surface-container-low px-3 py-1.5 rounded-2xl border border-outline-variant/40">
+                    <span className="text-[9.5px] uppercase font-label-caps text-outline block font-bold">SLA Remaining</span>
+                    <div className="font-data-mono font-extrabold text-risk-critical text-[13.5px]">
                       {msn.timeRemaining}
                     </div>
                   </div>
                 </div>
 
-                <p className="text-[13px] text-on-surface-variant bg-surface-container-low p-3 rounded-xl border border-outline-variant/40 mb-3 leading-relaxed">
+                <p className="text-[12.5px] text-on-surface-variant bg-[#f4f7f4] p-3 rounded-2xl border border-[#d5e2d6] mb-3 leading-relaxed">
                   "{msn.directive}"
                 </p>
 
-                <div className="space-y-2 text-[12px] mb-3">
+                <div className="space-y-1.5 text-[12px] mb-4">
                   <div className="flex justify-between">
-                    <span className="text-outline">Assigned Crew:</span>
+                    <span className="text-on-surface-variant font-medium">Assigned Squad:</span>
                     <span className="font-bold text-on-surface">{msn.assignedTeam} (Lead: {msn.lead})</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-outline">Equipment Deployed:</span>
+                    <span className="text-on-surface-variant font-medium">Equipment:</span>
                     <span className="font-semibold text-on-surface">{msn.equipment}</span>
                   </div>
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-[11px] font-semibold text-outline mb-1">
+                  <div className="flex justify-between text-[11px] font-semibold text-on-surface-variant mb-1.5">
                     <span>Task Progress</span>
                     <span className="font-data-mono text-primary font-bold">{msn.progress}% Completed</span>
                   </div>
-                  <div className="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: `${msn.progress}%` }}></div>
+                  <div className="w-full bg-[#e8f0e8] rounded-full h-2 overflow-hidden">
+                    <div className="bg-primary h-2 rounded-full transition-all duration-500" style={{ width: `${msn.progress}%` }}></div>
                   </div>
                 </div>
               </div>
@@ -130,19 +130,19 @@ export default function DispatchView({
               <div className="flex items-center justify-between pt-4 mt-4 border-t border-outline-variant/40">
                 <button
                   onClick={() => showToast(`Radio telemetry ping sent to ${msn.assignedTeam}`)}
-                  className="text-on-surface-variant hover:text-primary text-[12px] font-bold flex items-center gap-1"
+                  className="text-on-surface-variant hover:text-primary text-[12px] font-bold flex items-center gap-1.5 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">podcasts</span>
-                  Ping Crew Telemetry
+                  Ping Crew
                 </button>
                 <button
                   onClick={() => {
                     showToast(`✓ Mission ${msn.id} marked as Complete!`);
                     if (onRefreshData) onRefreshData();
                   }}
-                  className="bg-primary text-on-primary px-4 py-1.5 rounded-xl text-[12px] font-label-caps hover:bg-surface-tint transition-all shadow-2xs cursor-pointer"
+                  className="bg-primary text-white px-4 py-2 rounded-full text-[11.5px] font-label-caps hover:bg-primary/90 transition-all shadow-2xs font-bold cursor-pointer"
                 >
-                  Mark Completed
+                  Mark Complete
                 </button>
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function DispatchView({
       </div>
 
       {/* Field Fleet Availability */}
-      <div className="space-y-4 pt-4">
+      <div className="space-y-4 pt-2">
         <h2 className="font-title-md font-bold text-on-surface text-[18px]">
           Field Squad Readiness &amp; Availability
         </h2>
@@ -160,32 +160,32 @@ export default function DispatchView({
           {teams.map((team) => (
             <div
               key={team.id}
-              className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs flex flex-col justify-between"
+              className="bg-surface-container-lowest p-5 rounded-3xl border border-outline-variant/60 shadow-card-soft hover:shadow-card-hover transition-all flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase font-data-mono ${
+                    className={`px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase font-data-mono ${
                       team.status === 'Available'
-                        ? 'bg-secondary-container text-on-secondary-container'
-                        : 'bg-amber-100 text-amber-900'
+                        ? 'bg-primary-container text-on-primary-container border border-[#bbf7d0]'
+                        : 'bg-[#ffedd5] text-risk-high border border-[#fed7aa]'
                     }`}
                   >
                     {team.status}
                   </span>
-                  <span className="text-[12px] text-primary font-bold">★ {team.rating}</span>
+                  <span className="text-[12px] text-primary font-bold bg-primary-container/30 px-2 py-0.5 rounded-full">★ {team.rating}</span>
                 </div>
 
                 <h4 className="font-bold text-on-surface text-[15px]">{team.name}</h4>
-                <p className="text-[12px] text-on-surface-variant mb-2">Lead: {team.lead}</p>
-                <div className="text-[11px] text-outline bg-surface-container-low p-2 rounded-lg border border-outline-variant/30 mb-3">
+                <p className="text-[12px] text-on-surface-variant mb-2">Lead: <strong>{team.lead}</strong></p>
+                <div className="text-[11px] text-outline bg-surface-container-low p-2 rounded-xl border border-outline-variant/30 mb-3 font-medium">
                   {team.vehicle}
                 </div>
               </div>
 
               <button
                 onClick={() => onOpenDispatchModal && onOpenDispatchModal({ id: team.id, name: team.name })}
-                className="w-full bg-surface-container hover:bg-primary hover:text-white text-on-surface font-label-caps text-[11px] py-2 rounded-xl transition-all font-bold cursor-pointer"
+                className="w-full bg-surface-container hover:bg-primary hover:text-white text-on-surface font-label-caps text-[11px] py-2 rounded-full transition-all font-bold cursor-pointer"
               >
                 Assign Directive
               </button>
