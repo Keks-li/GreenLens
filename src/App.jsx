@@ -20,6 +20,7 @@ import LoginView from './components/auth/LoginView';
 import DispatchModal from './components/modals/DispatchModal';
 import SegmentDetailsModal from './components/modals/SegmentDetailsModal';
 import IncidentDetailModal from './components/modals/IncidentDetailModal';
+import CreateFieldTeamModal from './components/modals/CreateFieldTeamModal';
 import HelpModal from './components/modals/HelpModal';
 
 import { dataService, isSupabaseConfigured } from './lib/supabase';
@@ -118,6 +119,7 @@ export default function App() {
   const [selectedSegment, setSelectedSegment] = useState(null);
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [dispatchItem, setDispatchItem] = useState(null);
+  const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [focusedLocation, setFocusedLocation] = useState(null);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -329,6 +331,19 @@ export default function App() {
     }
   };
 
+  // Register new field dispatch team (Admin action)
+  const handleCreateFieldTeam = async (newTeamData) => {
+    const created = await dataService.createFieldTeam({
+      ...newTeamData,
+      municipalityId: selectedMunicipalityId
+    });
+    if (created) {
+      setFieldTeams((prev) => [created, ...prev.filter((t) => t.id !== created.id)]);
+      showToast(`✓ Dispatch Squad "${created.name}" registered successfully!`);
+      await loadData(selectedMunicipalityId);
+    }
+  };
+
   // Update incident status
   const handleUpdateIncidentStatus = async (incidentId, newStatus, teamId = null) => {
     await dataService.updateIncidentStatus(incidentId, newStatus, teamId);
@@ -533,6 +548,7 @@ export default function App() {
               fieldTeams={fieldTeams}
               dispatches={dispatches}
               onOpenDispatchModal={handleOpenDispatch}
+              onOpenCreateTeam={() => setIsCreateTeamOpen(true)}
               onRefreshData={() => loadData(selectedMunicipalityId)}
             />
           )}
@@ -541,6 +557,7 @@ export default function App() {
             <FieldTeamsView
               fieldTeams={fieldTeams}
               onOpenDispatch={handleOpenDispatch}
+              onOpenCreateTeam={() => setIsCreateTeamOpen(true)}
               onRefreshData={() => loadData(selectedMunicipalityId)}
             />
           )}
@@ -644,6 +661,12 @@ export default function App() {
         targetItem={dispatchItem}
         fieldTeamsList={fieldTeams}
         onConfirmDispatch={handleConfirmDispatch}
+      />
+
+      <CreateFieldTeamModal
+        isOpen={isCreateTeamOpen}
+        onClose={() => setIsCreateTeamOpen(false)}
+        onCreateTeam={handleCreateFieldTeam}
       />
 
       <SegmentDetailsModal

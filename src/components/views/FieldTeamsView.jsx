@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispatch, onRefreshData }) {
+export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispatch, onOpenCreateTeam, onRefreshData }) {
   const [teams, setTeams] = useState(propTeams || []);
   const [copiedId, setCopiedId] = useState(null);
 
@@ -33,11 +33,20 @@ export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispa
             Live municipal registry of response squads, Bus Stop Boys rapid desilting crews, specialized rigs, and direct admin dispatch telephone lines.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="bg-primary/10 text-primary border border-primary/20 px-3.5 py-1.5 rounded-full font-bold text-[12px] font-data-mono flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="bg-primary/10 text-primary border border-primary/20 px-3.5 py-2 rounded-xl font-bold text-[12px] font-data-mono flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-primary animate-ping"></span>
             <span>{teams.length} Squads Online</span>
           </span>
+
+          <button
+            type="button"
+            onClick={() => onOpenCreateTeam && onOpenCreateTeam()}
+            className="bg-primary hover:bg-primary/95 text-white px-4 py-2 rounded-xl font-label-caps text-[12px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 font-bold cursor-pointer hover:scale-[1.02] active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[18px]">add_circle</span>
+            <span>Add Dispatch Team</span>
+          </button>
         </div>
       </div>
 

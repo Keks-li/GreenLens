@@ -4,6 +4,7 @@ export default function DispatchView({
   fieldTeams: propFieldTeams = [],
   dispatches: propDispatches = [],
   onOpenDispatchModal,
+  onOpenCreateTeam,
   onRefreshData
 }) {
   const [teams, setTeams] = useState(propFieldTeams || []);
@@ -49,13 +50,25 @@ export default function DispatchView({
           </p>
         </div>
 
-        <button
-          onClick={() => onOpenDispatchModal && onOpenDispatchModal({ id: 'D-102', name: 'Rapid Dispatch Directive' })}
-          className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          Create New Dispatch
-        </button>
+        <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+          {onOpenCreateTeam && (
+            <button
+              onClick={onOpenCreateTeam}
+              className="bg-surface-container text-on-surface hover:bg-surface-container-high px-4 py-2.5 rounded-xl font-label-caps text-[12px] transition-all flex items-center gap-1.5 cursor-pointer border border-outline-variant/60 font-bold"
+            >
+              <span className="material-symbols-outlined text-[18px]">group_add</span>
+              Add Dispatch Team
+            </button>
+          )}
+
+          <button
+            onClick={() => onOpenDispatchModal && onOpenDispatchModal({ id: 'D-102', name: 'Rapid Dispatch Directive' })}
+            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 cursor-pointer font-bold"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Create New Dispatch
+          </button>
+        </div>
       </div>
 
       {/* Active Missions Live SLA Board */}

@@ -745,6 +745,53 @@ export const dataService = {
     return this.defaultTeams;
   },
 
+  // Register / Add a new Field Dispatch Team (Admin capability)
+  async createFieldTeam(teamData) {
+    const id = teamData.id || `team-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
+    const newTeam = {
+      id,
+      name: teamData.name || 'Municipal Rapid Unit',
+      lead: teamData.lead || 'Squad Lead',
+      specialization: teamData.specialization || 'Urban Drainage & Desilting',
+      members_count: Number(teamData.membersCount || teamData.members_count || 6),
+      status: teamData.status || 'Available',
+      current_location: teamData.currentLocation || teamData.current_location || 'Winneba Municipal Base',
+      vehicle: teamData.vehicle || 'Response Truck',
+      rating: Number(teamData.rating || 5.0),
+      active_tasks: 0,
+      contact: teamData.contact || '+233 24 000 0000',
+      municipality_id: teamData.municipalityId || 'winneba',
+      avatar_url: teamData.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+      vehicle_image_url: teamData.vehicleImageUrl || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80'
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('field_teams')
+          .insert([newTeam])
+          .select();
+
+        if (!error && data?.length) {
+          await this.addAuditLog({
+            user: 'Admin Lead (You)',
+            action: 'FIELD_TEAM_REGISTERED',
+            entity: newTeam.name,
+            details: `Registered dispatch squad "${newTeam.name}" (Lead: ${newTeam.lead}, Contact: ${newTeam.contact}).`
+          });
+          return mapFieldTeam(data[0]);
+        }
+      } catch (err) {
+        console.error('Supabase createFieldTeam error:', err);
+      }
+    }
+
+    // Fallback: also add to defaultTeams in memory
+    const fallbackMapped = mapFieldTeam(newTeam);
+    this.defaultTeams = [fallbackMapped, ...this.defaultTeams];
+    return fallbackMapped;
+  },
+
   // Update Field Team status
   async updateFieldTeam(teamId, updates) {
     if (isSupabaseConfigured && supabase) {
