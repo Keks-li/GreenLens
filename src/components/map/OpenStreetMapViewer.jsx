@@ -75,27 +75,56 @@ export default function OpenStreetMapViewer({
     flowLines: true
   });
 
-  // Expose global callback for popup actions
+  const onOpenDispatchRef = useRef(onOpenDispatch);
+  onOpenDispatchRef.current = onOpenDispatch;
+  const onSelectSegmentRef = useRef(onSelectSegment);
+  onSelectSegmentRef.current = onSelectSegment;
+  const focusedItemRef = useRef(null);
+
+  useEffect(() => {
+    focusedItemRef.current = focusedLocation?.item || focusedLocation;
+  }, [focusedLocation]);
+
+  // Expose global callbacks for popup actions
   useEffect(() => {
     window.__greenlens_inspect_segment = (segId) => {
-      const seg = drainageSegments.find((d) => d.id === segId);
-      if (seg && onSelectSegment) onSelectSegment(seg);
+      const seg = (drainageSegments || []).find((d) => d.id === segId);
+      if (seg && onSelectSegmentRef.current) onSelectSegmentRef.current(seg);
     };
-    window.__greenlens_dispatch_location = (locName, lat, lng) => {
-      if (onOpenDispatch) {
-        onOpenDispatch({
-          drainName: locName,
-          location: `GIS: ${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`,
-          lat: Number(lat),
-          lng: Number(lng)
-        });
+
+    window.__greenlens_dispatch_focused = () => {
+      const item = focusedItemRef.current || (focusedLocation?.item) || focusedLocation;
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.closePopup();
+      }
+      if (onOpenDispatchRef.current && item) {
+        onOpenDispatchRef.current(item);
       }
     };
+
+    window.__greenlens_dispatch_location = (locName, lat, lng, itemId) => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.closePopup();
+      }
+      const item = (itemId && (incidents || []).find(i => i.id === itemId)) || {
+        title: locName,
+        drainName: locName,
+        location: `GIS: ${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`,
+        coords: `${Number(lat).toFixed(4)}°N, ${Math.abs(Number(lng)).toFixed(4)}°W`,
+        lat: Number(lat),
+        lng: Number(lng)
+      };
+      if (onOpenDispatchRef.current) {
+        onOpenDispatchRef.current(item);
+      }
+    };
+
     return () => {
       delete window.__greenlens_inspect_segment;
+      delete window.__greenlens_dispatch_focused;
       delete window.__greenlens_dispatch_location;
     };
-  }, [drainageSegments, onSelectSegment, onOpenDispatch]);
+  }, [drainageSegments, incidents]);
 
   // Initialize Leaflet Map instance
   useEffect(() => {
@@ -618,7 +647,7 @@ export default function OpenStreetMapViewer({
           <div style="display: flex; gap: 4px; margin-top: 6px;">
             <button
               type="button"
-              onclick="window.__greenlens_dispatch_location('${item.title || item.sector || 'Incident'}', ${lat}, ${lng})"
+              onclick="window.__greenlens_dispatch_focused &amp;&amp; window.__greenlens_dispatch_focused()"
               style="flex: 1; background: #206d1f; color: white; border: none; padding: 7px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;"
             >
               <span>Dispatch Resolution Team</span>

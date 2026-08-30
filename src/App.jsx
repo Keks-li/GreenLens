@@ -378,6 +378,7 @@ export default function App() {
               onSelectIncident={handleSelectIncident}
               selectedSegmentId={selectedSegment?.id}
               onDispatchAction={handleOpenDispatch}
+              onOpenDispatch={handleOpenDispatch}
               onViewDetailsAction={(action) => {
                 const targetDrain = drainageSegments.find((d) => d.id === action.drainId);
                 setSelectedSegment(targetDrain || action);

@@ -19,6 +19,7 @@ export default function DashboardView({
   onSelectIncident,
   selectedSegmentId,
   onDispatchAction,
+  onOpenDispatch,
   onViewDetailsAction,
   onInspectRisk,
   onLocateOnMap,
@@ -146,6 +147,7 @@ export default function DashboardView({
             onSelectSegment={onSelectSegment}
             onSelectIncident={onSelectIncident}
             selectedSegmentId={selectedSegmentId}
+            onOpenDispatch={onOpenDispatch || onDispatchAction}
           />
 
           {/* Right: Risk Summary & AI Recs (4 cols) */}
