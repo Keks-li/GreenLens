@@ -72,7 +72,9 @@ export default function App() {
     const resolvedCount = (incidents || []).filter(
       (i) => i.status === 'resolved' || i.rawStatus === 'RESOLVED' || i.rawStatus === 'CLOSED'
     ).length;
-    const totalIncidentKg = (incidents || []).reduce((sum, i) => {
+    const resolvedIncidentsKg = (incidents || []).filter(
+      (i) => i.status === 'resolved' || i.rawStatus === 'RESOLVED' || i.rawStatus === 'CLOSED'
+    ).reduce((sum, i) => {
       const w = Number(
         i.weight_quantity ||
         i.weightQuantity ||
@@ -83,17 +85,14 @@ export default function App() {
     const totalKgCleared = (citizenRewards || []).reduce(
       (sum, r) => sum + Number(r.refuse_kg_cleared || r.refuseKgCleared || r.weight_quantity || 0),
       0
-    ) + (totalIncidentKg > 0 ? totalIncidentKg * 0.6 : 0);
-    const wasteTons =
-      totalKgCleared > 0
-        ? (totalKgCleared / 1000).toFixed(1)
-        : (((resolvedCount * 120 + 240) / 1000)).toFixed(1);
+    ) + resolvedIncidentsKg;
+    const wasteTons = (totalKgCleared / 1000).toFixed(1);
 
     return {
       reportsToday: {
         value: totalReports,
-        change: totalReports > 0 ? `+${totalReports}` : '0',
-        trend: 'up'
+        change: `${totalReports}`,
+        trend: totalReports > 0 ? 'up' : 'stable'
       },
       criticalIncidents: {
         value: criticalCount,
@@ -103,22 +102,22 @@ export default function App() {
       highFloodRisk: {
         value: highFloodRiskCount,
         unit: 'Culverts',
-        trend: 'stable'
+        trend: highFloodRiskCount > 0 ? 'up' : 'stable'
       },
       activeCleanups: {
         value: activeCleanupsCount,
         change: `${activeCleanupsCount}`,
-        trend: 'up'
+        trend: activeCleanupsCount > 0 ? 'up' : 'stable'
       },
       resolvedToday: {
         value: resolvedCount,
         change: `${resolvedCount}`,
-        trend: 'up'
+        trend: resolvedCount > 0 ? 'up' : 'stable'
       },
       wasteRemoved: {
         value: Number(wasteTons),
         unit: 'Tons',
-        trend: 'up'
+        trend: Number(wasteTons) > 0 ? 'up' : 'stable'
       }
     };
   }, [incidents, drainageSegments, dispatches, citizenRewards]);
@@ -498,6 +497,7 @@ export default function App() {
         <main className="relative pt-16 min-h-screen bg-background pb-12 w-full">
           {currentView === 'dashboard' && (
             <DashboardView
+              currentUser={currentUser}
               kpis={liveKpis}
               drainageSegments={drainageSegments}
               incidents={incidents}
@@ -650,6 +650,7 @@ export default function App() {
               incidentsList={incidents}
               currentUser={currentUser}
               selectedMunicipality={selectedMunicipality}
+              municipalitiesList={municipalitiesList}
               kpis={liveKpis}
               drainageSegments={drainageSegments}
               fieldTeams={fieldTeams}

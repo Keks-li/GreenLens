@@ -7,17 +7,19 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
   const [isSimulating, setIsSimulating] = useState(false);
 
   // Compute dynamic hydraulic simulation outcomes based on drainage database records
-  const totalDrainsCount = drainageSegments.length || 6;
+  const totalDrainsCount = drainageSegments.length;
   const highRiskDrains = drainageSegments.filter(s => s.riskLevel === 'critical' || s.riskScore >= 75);
   const topChokePoints = highRiskDrains.length > 0 ? highRiskDrains.slice(0, 2) : drainageSegments.slice(0, 2);
 
   const baseRisk = Math.min(100, Math.round(rainfallMm * 0.7 + debrisIncreasePercent * 0.8));
   const effectiveRisk = proactiveCleanApplied ? Math.max(20, baseRisk - 35) : baseRisk;
-  const criticalDrainsCount = effectiveRisk > 75 
-    ? Math.max(1, Math.min(totalDrainsCount, Math.round((effectiveRisk / 100) * totalDrainsCount))) 
-    : Math.max(0, Math.round((effectiveRisk / 100) * (totalDrainsCount / 2)));
-  const estimatedWaterVolume = Math.round(rainfallMm * 240 * (1 + debrisIncreasePercent / 100));
-  const affectedPopulation = Math.round(effectiveRisk * 85);
+  const criticalDrainsCount = totalDrainsCount > 0
+    ? (effectiveRisk > 75 
+        ? Math.max(1, Math.min(totalDrainsCount, Math.round((effectiveRisk / 100) * totalDrainsCount))) 
+        : Math.max(0, Math.round((effectiveRisk / 100) * (totalDrainsCount / 2))))
+    : 0;
+  const estimatedWaterVolume = totalDrainsCount > 0 ? Math.round(rainfallMm * totalDrainsCount * 40 * (1 + debrisIncreasePercent / 100)) : 0;
+  const affectedPopulation = totalDrainsCount > 0 ? Math.round(effectiveRisk * totalDrainsCount * 15) : 0;
 
   const runLiveSimulation = () => {
     setIsSimulating(true);
@@ -214,7 +216,7 @@ export default function AIInsightsView({ drainageSegments = [], priorityActions 
           <div className="pt-3 border-t border-outline-variant/40 flex items-center justify-between">
             <span className="text-[12px] text-outline font-data-mono font-medium">Est. Runoff: {estimatedWaterVolume.toLocaleString()} m³</span>
             <button
-              onClick={() => onOpenDispatch && onOpenDispatch(topChokePoints[0] || { id: 'D-102', name: 'Simulated Choke Points' })}
+              onClick={() => onOpenDispatch && onOpenDispatch(topChokePoints[0] || { name: 'Simulated Choke Points' })}
               className="bg-primary text-white px-5 py-2.5 rounded-full text-[11.5px] font-label-caps hover:bg-primary/90 shadow-2xs flex items-center gap-2 font-bold cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px]">local_shipping</span>

@@ -17,7 +17,31 @@ export default function LoginView({ onLoginSuccess }) {
     const cleanEmail = (email || '').trim().toLowerCase();
 
     try {
-      // 1. If Supabase Auth is configured, attempt authentication
+      // 1. Authenticate via deployed Supabase Edge Function
+      if (isSupabaseConfigured) {
+        try {
+          const edgeRes = await dataService.loginViaEdgeFunction(cleanEmail, password);
+          if (edgeRes?.success && edgeRes.user) {
+            onLoginSuccess(edgeRes.user);
+            setIsLoading(false);
+            return;
+          }
+          // If Edge Function returned an invalid credentials error for a non-demo user, surface it
+          if (
+            edgeRes?.error &&
+            !cleanEmail.includes('admin@') &&
+            !seededAdminAccounts.some((a) => a.email.toLowerCase() === cleanEmail)
+          ) {
+            setErrorMessage(edgeRes.error);
+            setIsLoading(false);
+            return;
+          }
+        } catch (edgeErr) {
+          console.warn('Edge Function auth attempt:', edgeErr);
+        }
+      }
+
+      // 2. Direct Supabase Auth fallback
       if (isSupabaseConfigured && supabase) {
         try {
           const { data, error } = await supabase.auth.signInWithPassword({
@@ -31,7 +55,7 @@ export default function LoginView({ onLoginSuccess }) {
               email: cleanEmail,
               role: data.user.user_metadata?.role || 'System Administrator',
               dept: data.user.user_metadata?.department || 'Executive Command',
-              municipalityId: 'winneba'
+              municipalityId: data.user.user_metadata?.municipalityId || 'winneba'
             });
             setIsLoading(false);
             return;

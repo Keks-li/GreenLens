@@ -9,6 +9,7 @@ export default function AdministrationView({
   incidentsList = [],
   currentUser,
   selectedMunicipality,
+  municipalitiesList = [],
   kpis,
   drainageSegments = [],
   fieldTeams = [],
@@ -20,6 +21,14 @@ export default function AdministrationView({
   const userRole = currentUser?.role || 'Municipal Officer';
   const permissions = getPermissionsForRole(userRole);
   const isAdmin = permissions.canManageUsers || userRole.toLowerCase().includes('admin');
+
+  const defaultMunis = [
+    { id: 'winneba', name: 'Winneba Municipal Assembly' },
+    { id: 'accra', name: 'Accra Metropolitan Assembly' },
+    { id: 'kumasi', name: 'Kumasi Metropolitan Assembly' },
+    { id: 'cape_coast', name: 'Cape Coast Metropolitan' }
+  ];
+  const availableMunicipalities = municipalitiesList?.length > 0 ? municipalitiesList : defaultMunis;
 
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'activity', 'config'
   const [userCategoryFilter, setUserCategoryFilter] = useState('all'); // 'all', 'officers', 'field', 'citizens'
@@ -33,13 +42,16 @@ export default function AdministrationView({
     name: '',
     email: '',
     phone: '',
-    role: 'Municipal Officer',
+    role: 'Administrator',
     department: 'Operations Command',
-    municipalityId: 'winneba'
+    municipalityId: selectedMunicipality?.id || 'winneba'
   });
 
   const [toastMessage, setToastMessage] = useState(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [credentialsModalData, setCredentialsModalData] = useState(null);
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -109,12 +121,52 @@ export default function AdministrationView({
       name: '',
       email: '',
       phone: '',
-      role: 'Municipal Officer',
+      role: 'Administrator',
       department: 'Operations Command',
-      municipalityId: 'winneba'
+      municipalityId: selectedMunicipality?.id || 'winneba'
     });
-    showToast(`✓ User ${created.name} (${created.role}) registered and synced with Supabase!`);
+
+    // Open the Credentials Dialog Box so the admin can copy and send the password
+    setCredentialsModalData({
+      isOpen: true,
+      title: 'New User Provisioned',
+      user: created,
+      isReset: false
+    });
+
     if (onRefreshData) onRefreshData();
+  };
+
+  const handleResetUserPassword = async (userObj) => {
+    if (!isAdmin) {
+      showToast('⚠️ Only Administrators can reset passwords.');
+      return;
+    }
+    setIsResettingPassword(true);
+    try {
+      const res = await dataService.resetUserPassword({
+        userId: userObj.id,
+        email: userObj.email
+      });
+
+      if (res?.success && res.tempPassword) {
+        setCredentialsModalData({
+          isOpen: true,
+          title: 'Password Reset Successful',
+          user: {
+            ...userObj,
+            tempPassword: res.tempPassword
+          },
+          isReset: true
+        });
+      } else {
+        showToast(`⚠️ ${res?.error || 'Failed to reset password'}`);
+      }
+    } catch (err) {
+      showToast('⚠️ Error resetting user password');
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   const handleToggleUserStatus = async (userObj) => {
@@ -198,7 +250,7 @@ export default function AdministrationView({
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
           <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Total Registered Users</span>
           <div className="text-[28px] font-bold text-on-surface mt-1">{users.length}</div>
-          <span className="text-[12px] text-primary font-bold mt-0.5 block">Across Winneba Assembly</span>
+          <span className="text-[12px] text-primary font-bold mt-0.5 block">Across {selectedMunicipality?.name || 'Municipal Assembly'}</span>
         </div>
 
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
@@ -212,7 +264,7 @@ export default function AdministrationView({
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
           <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Citizen Champions</span>
           <div className="text-[28px] font-bold text-primary mt-1">
-            {users.filter(u => u.role?.includes('Citizen')).length || 2}
+            {users.filter(u => u.role?.includes('Citizen')).length}
           </div>
           <span className="text-[12px] text-primary font-semibold mt-0.5 block">Verified Community Watch</span>
         </div>
@@ -355,7 +407,10 @@ export default function AdministrationView({
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-on-surface-variant font-medium">
-                          {usr.department}
+                          <div>{usr.department}</div>
+                          <div className="text-[11px] text-outline font-semibold">
+                            {availableMunicipalities.find(m => m.id === usr.municipalityId)?.name || usr.municipalityId || 'Winneba'}
+                          </div>
                         </td>
                         <td className="py-3.5 px-4">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
@@ -371,7 +426,19 @@ export default function AdministrationView({
                             {usr.status}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap space-x-2" onClick={(e) => e.stopPropagation()}>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => handleResetUserPassword(usr)}
+                              disabled={isResettingPassword}
+                              className="text-on-surface-variant hover:text-primary font-bold text-[12px] px-2.5 py-1 rounded-lg hover:bg-surface-container cursor-pointer transition-colors inline-flex items-center gap-1"
+                              title="Reset and generate a new password for this user"
+                            >
+                              <span className="material-symbols-outlined text-[15px] text-primary">key</span>
+                              <span>Reset Pwd</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => setSelectedUserDetail(usr)}
@@ -475,7 +542,9 @@ export default function AdministrationView({
                 </div>
                 <div>
                   <span className="text-outline text-[11px] block">Jurisdiction:</span>
-                  <span className="font-semibold text-on-surface uppercase font-data-mono">Winneba Municipal Assembly</span>
+                  <span className="font-semibold text-on-surface uppercase font-data-mono">
+                    {availableMunicipalities.find(m => m.id === selectedUserDetail.municipalityId)?.name || selectedUserDetail.municipalityId || selectedMunicipality?.name || 'Winneba Municipal Assembly'}
+                  </span>
                 </div>
                 <div>
                   <span className="text-outline text-[11px] block">Account Status:</span>
@@ -484,23 +553,37 @@ export default function AdministrationView({
               </div>
 
               {/* User Action Controls */}
-              <div className="flex items-center justify-between p-3.5 bg-surface-container rounded-xl border border-outline-variant/40">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 bg-surface-container rounded-xl border border-outline-variant/40">
                 <div className="text-[12px]">
-                  <span className="font-bold text-on-surface block">Account Access Management</span>
-                  <span className="text-outline text-[11px]">Suspend or activate this user profile</span>
+                  <span className="font-bold text-on-surface block">Account Access & Security</span>
+                  <span className="text-outline text-[11px]">Suspend, reactivate, or reset credentials</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleToggleUserStatus(selectedUserDetail)}
-                  disabled={isUpdatingStatus}
-                  className={`px-4 py-2 rounded-xl text-[12px] font-bold font-label-caps transition-all cursor-pointer ${
-                    selectedUserDetail.status === 'Active'
-                      ? 'bg-error-container text-on-error-container hover:bg-red-200'
-                      : 'bg-primary text-on-primary hover:bg-surface-tint'
-                  }`}
-                >
-                  {selectedUserDetail.status === 'Active' ? 'Suspend Account' : 'Reactivate Account'}
-                </button>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleResetUserPassword(selectedUserDetail)}
+                      disabled={isResettingPassword}
+                      className="px-3.5 py-2 rounded-xl text-[12px] font-bold font-label-caps bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-outline-variant flex items-center gap-1.5 transition-all cursor-pointer"
+                      title="Generate and issue a new password for this user"
+                    >
+                      <span className="material-symbols-outlined text-[16px] text-primary">key</span>
+                      <span>{isResettingPassword ? 'Generating...' : 'Reset Password'}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleUserStatus(selectedUserDetail)}
+                    disabled={isUpdatingStatus}
+                    className={`px-3.5 py-2 rounded-xl text-[12px] font-bold font-label-caps transition-all cursor-pointer ${
+                      selectedUserDetail.status === 'Active'
+                        ? 'bg-error-container text-on-error-container hover:bg-red-200'
+                        : 'bg-primary text-on-primary hover:bg-surface-tint'
+                    }`}
+                  >
+                    {selectedUserDetail.status === 'Active' ? 'Suspend Account' : 'Reactivate Account'}
+                  </button>
+                </div>
               </div>
 
               {/* Activity History for this Specific User */}
@@ -610,11 +693,26 @@ export default function AdministrationView({
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                   className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-2.5 text-body-sm"
                 >
+                  <option value="Administrator">Administrator (Full Admin)</option>
                   <option value="Municipal Officer">Municipal Officer (Operations Lead)</option>
                   <option value="Supervisor">Supervisor (Field Lead)</option>
                   <option value="Field Worker Lead">Field Worker Lead (Rapid Strike)</option>
                   <option value="Citizen Champion">Citizen Champion (Community Reporter)</option>
-                  <option value="Administrator">Administrator (Full Admin)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-on-surface mb-1 text-[12px]">Assigned Municipality / Jurisdiction</label>
+                <select
+                  value={newUser.municipalityId}
+                  onChange={(e) => setNewUser({ ...newUser, municipalityId: e.target.value })}
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl p-2.5 text-body-sm"
+                >
+                  {availableMunicipalities.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -645,6 +743,118 @@ export default function AdministrationView({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Credentials & Password Dialog Box */}
+      {credentialsModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-surface-container-lowest rounded-3xl shadow-2xl border border-outline-variant w-full max-w-md overflow-hidden animate-in zoom-in-95 flex flex-col">
+            <div className="bg-primary px-6 py-5 text-on-primary flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-[24px]">key</span>
+                <div>
+                  <h3 className="font-title-md font-bold text-[18px]">
+                    {credentialsModalData.title || 'User Credentials'}
+                  </h3>
+                  <p className="text-[12px] text-white/80">
+                    {credentialsModalData.isReset
+                      ? 'New password generated via Supabase Auth'
+                      : 'Account provisioned in Supabase Auth'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCredentialsModalData(null)}
+                className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-body-sm">
+              <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/60 space-y-2 text-[13px]">
+                <div className="flex justify-between items-center">
+                  <span className="text-outline text-[11px]">User Name:</span>
+                  <span className="font-bold text-on-surface">{credentialsModalData.user.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-outline text-[11px]">Email Address:</span>
+                  <span className="font-semibold text-on-surface font-data-mono">{credentialsModalData.user.email}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-outline text-[11px]">Assigned Role:</span>
+                  <span className="font-bold text-primary">{credentialsModalData.user.role}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-outline text-[11px]">Jurisdiction:</span>
+                  <span className="font-semibold text-on-surface uppercase font-data-mono text-[11px]">
+                    {availableMunicipalities.find(m => m.id === credentialsModalData.user.municipalityId)?.name || credentialsModalData.user.municipalityId || 'Winneba Municipal Assembly'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Temporary Password Highlight Box */}
+              <div>
+                <label className="block font-semibold text-on-surface mb-1 text-[12px]">
+                  Generated Password
+                </label>
+                <div className="flex items-center gap-2 p-3 bg-surface-container rounded-xl border border-outline-variant">
+                  <span className="material-symbols-outlined text-primary text-[20px]">lock</span>
+                  <span className="font-data-mono font-bold text-[16px] text-on-surface flex-1 tracking-wider select-all">
+                    {credentialsModalData.user.tempPassword || 'GreenLens@2026!'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(credentialsModalData.user.tempPassword || '');
+                      setCopyFeedback(true);
+                      setTimeout(() => setCopyFeedback(false), 2500);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-[12px] font-bold font-label-caps flex items-center gap-1.5 transition-all cursor-pointer ${
+                      copyFeedback
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-primary text-on-primary hover:bg-surface-tint'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      {copyFeedback ? 'check' : 'content_copy'}
+                    </span>
+                    <span>{copyFeedback ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-outline mt-1.5">
+                  Copy and send this password to the user. They can sign in immediately using these credentials.
+                </p>
+              </div>
+
+              {/* Full Invitation Card Copy */}
+              <button
+                type="button"
+                onClick={() => {
+                  const muniName = availableMunicipalities.find(m => m.id === credentialsModalData.user.municipalityId)?.name || credentialsModalData.user.municipalityId || 'Winneba Municipal Assembly';
+                  const msg = `GreenLens Municipal Command Center Credentials\n\nUser: ${credentialsModalData.user.name}\nEmail: ${credentialsModalData.user.email}\nPassword: ${credentialsModalData.user.tempPassword}\nRole: ${credentialsModalData.user.role}\nJurisdiction: ${muniName}\n\nPlease log in and update your password after initial access.`;
+                  navigator.clipboard.writeText(msg);
+                  setCopyFeedback(true);
+                  setTimeout(() => setCopyFeedback(false), 2500);
+                }}
+                className="w-full py-2.5 rounded-xl border border-outline-variant hover:border-primary/50 text-on-surface hover:text-primary bg-surface-container-low text-[12px] font-bold font-label-caps flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <span className="material-symbols-outlined text-[16px] text-primary">share</span>
+                <span>Copy Full Login Message</span>
+              </button>
+            </div>
+
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant/60 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCredentialsModalData(null)}
+                className="bg-primary text-on-primary hover:bg-surface-tint px-6 py-2 rounded-xl text-[12px] font-label-caps font-bold cursor-pointer shadow-xs"
+              >
+                Close Dialog
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -89,7 +89,7 @@ export default function IncidentDetailModal({
               
               <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full text-white text-[11px] font-bold flex items-center gap-1.5 border border-white/20">
                 <span className="material-symbols-outlined text-primary text-[14px]">auto_awesome</span>
-                {incident.aiConfidence || '96% AI Verified'}
+                {incident.aiConfidence || 'AI Verified'}
               </div>
 
               <div className="absolute bottom-3 left-3 right-3 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-xl text-white text-[11px] flex justify-between items-center border border-white/15">
@@ -105,13 +105,13 @@ export default function IncidentDetailModal({
               <span className="text-[10px] uppercase font-bold text-outline block">Detected Refuse &amp; Material Type</span>
               <div className="text-[13.5px] font-bold text-on-surface flex items-center gap-1.5 mt-0.5">
                 <span className="material-symbols-outlined text-primary text-[18px]">recycling</span>
-                <span>{incident.refuseType || 'Plastics & Polymers (PET / Sachet Bags)'}</span>
+                <span>{incident.refuseType || incident.category || 'Refuse'}</span>
               </div>
             </div>
             <div className="text-right">
               <span className="text-[10px] uppercase font-bold text-outline block">Estimated Refuse Volume</span>
               <div className="text-[14px] font-bold font-data-mono text-primary mt-0.5">
-                {incident.estimatedWasteVolume || '150 kg'}
+                {incident.estimatedWasteVolume || incident.weightQuantityFormatted || 'Not recorded'}
               </div>
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function IncidentDetailModal({
 
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">
               <span className="text-outline font-semibold block text-[11px]">Associated Drain / Sector</span>
-              <div className="text-primary font-bold mt-0.5 truncate">{incident.drainId || incident.sector || 'Winneba Swale'}</div>
+              <div className="text-primary font-bold mt-0.5 truncate">{incident.drainId || incident.sector || 'Catchment Area'}</div>
             </div>
 
             <div className="bg-surface-container-low/70 backdrop-blur-xs p-3.5 rounded-xl border border-outline-variant/40">

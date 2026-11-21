@@ -21,7 +21,7 @@ export default function KPIGrid({ kpis, onCardClick }) {
           <span className="font-display-lg text-on-surface font-extrabold text-[24px] sm:text-[28px]">{kpis.reportsToday?.value ?? 0}</span>
           <span className="text-[11px] font-bold text-primary bg-primary-container px-2 py-0.5 rounded-full flex items-center gap-0.5">
             <span className="material-symbols-outlined text-[12px]">arrow_upward</span>
-            {kpis.reportsToday?.change || '0%'}
+            {kpis.reportsToday?.change ?? '0'}
           </span>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function KPIGrid({ kpis, onCardClick }) {
           <span className="font-display-lg text-on-surface font-extrabold text-[24px] sm:text-[28px]">{kpis.resolvedToday?.value ?? 0}</span>
           <span className="text-[11px] font-bold text-primary bg-primary-container px-2 py-0.5 rounded-full flex items-center gap-0.5">
             <span className="material-symbols-outlined text-[12px]">arrow_upward</span>
-            {kpis.resolvedToday?.change || '0%'}
+            {kpis.resolvedToday?.change ?? '0'}
           </span>
         </div>
       </div>

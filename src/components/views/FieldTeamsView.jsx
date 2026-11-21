@@ -30,7 +30,7 @@ export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispa
             </h1>
           </div>
           <p className="font-body-md text-on-surface-variant text-[13.5px]">
-            Live municipal registry of response squads, Bus Stop Boys rapid desilting crews, specialized rigs, and direct admin dispatch telephone lines.
+            Live municipal registry of response squads, specialized drainage desilting crews, dedicated equipment rigs, and direct admin dispatch telephone lines.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -51,10 +51,28 @@ export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispa
       </div>
 
       {/* Grid of Teams with Clear Photos & Rig Images */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {teams.length === 0 ? (
+        <div className="bg-surface-container-lowest p-12 rounded-3xl border border-outline-variant/60 text-center space-y-3 shadow-card-soft">
+          <span className="material-symbols-outlined text-outline text-[48px]">groups</span>
+          <h3 className="font-title-md font-bold text-on-surface text-[17px]">No Field Squads Registered</h3>
+          <p className="text-on-surface-variant text-[13px] max-w-md mx-auto">
+            No field response units are currently active in the database. Provision a new dispatch squad to coordinate municipal operations.
+          </p>
+          {onOpenCreateTeam && (
+            <button
+              onClick={onOpenCreateTeam}
+              className="bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-[12px] inline-flex items-center gap-2 cursor-pointer mt-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">add_circle</span>
+              Register First Squad
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {teams.map((team) => {
           const isBsb = team.id === 'team-bsb' || team.name?.includes('Bus Stop');
-          const cleanPhone = (team.contact || '+233248194022').replace(/\s+/g, '');
+          const cleanPhone = (team.contact || '').replace(/\s+/g, '');
 
           return (
             <div
@@ -174,6 +192,7 @@ export default function FieldTeamsView({ fieldTeams: propTeams = [], onOpenDispa
           );
         })}
       </div>
+      )}
     </div>
   );
 }

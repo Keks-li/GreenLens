@@ -71,10 +71,14 @@ export default function WasteIntelligenceView({
     const isHigh = seg.riskLevel === 'high' || (seg.riskScore >= 60 && seg.riskScore < 80);
     const relatedIncidents = (incidents || []).filter(i => i.drainId?.includes(seg.id) || i.sector === seg.sector);
     const materialType = relatedIncidents[0]?.refuseType || (seg.sector?.toLowerCase().includes('market') ? 'Single-Use Plastics & Organic Packaging' : 'Plastics & Silt Sediment');
-    const tonnage = ((seg.blockagePercent * 150 + 2500) / 1000).toFixed(1);
+    const totalIncidentKg = relatedIncidents.reduce((sum, i) => {
+      const w = Number(i.weight_quantity || i.weightQuantity || (parseFloat(String(i.estimatedWasteVolume || '').replace(/[^\d.]/g, '')) || 0));
+      return sum + (isNaN(w) ? 0 : w);
+    }, 0);
+    const tonnage = totalIncidentKg > 0 ? (totalIncidentKg / 1000).toFixed(1) : (seg.blockagePercent ? ((seg.blockagePercent * Number(seg.capacityM3S || 1) * 10) / 1000).toFixed(1) : '0.0');
 
     return {
-      id: `HOT-0${idx + 1}`,
+      id: `HOT-${String(idx + 1).padStart(2, '0')}`,
       name: `${seg.name} Hotspot`,
       sector: seg.sector,
       tonnageMonthly: `${tonnage} Tons`,
@@ -82,56 +86,29 @@ export default function WasteIntelligenceView({
       severity: isCrit ? 'Critical' : isHigh ? 'High' : 'Moderate',
       drainAffiliation: `Drain ${seg.id}`,
       recurrenceRate: isCrit ? 'Weekly Re-accumulation' : 'Rain-Triggered Sedimentation',
-      trend: isCrit ? '+18% vs Last Month' : '-4% Post Enforcement'
+      trend: isCrit ? 'Elevated Silt Influx' : 'Stable Flow Monitoring'
     };
   });
 
-  const wasteHotspots = dynamicHotspots.length > 0 ? dynamicHotspots : [
-    {
-      id: 'HOT-01',
-      name: 'Central Market Stall 42 Hinterland',
-      sector: 'Central Market Sector',
-      tonnageMonthly: '14.2 Tons',
-      primaryMaterial: 'Single-Use Plastics & Styrofoam',
-      severity: 'Critical',
-      drainAffiliation: 'Drain D-102',
-      recurrenceRate: 'Weekly Re-accumulation',
-      trend: '+18% vs Last Month'
-    },
-    {
-      id: 'HOT-02',
-      name: 'Coastal Fish Processing Swale',
-      sector: 'Fishing Harbor District',
-      tonnageMonthly: '9.8 Tons',
-      primaryMaterial: 'Organic Fish Refuse & Packaging',
-      severity: 'High',
-      drainAffiliation: 'Drain D-108',
-      recurrenceRate: 'Bi-Weekly Re-accumulation',
-      trend: '-6% Post Enforcement'
-    },
-    {
-      id: 'HOT-03',
-      name: 'Lowtown Construction Washout',
-      sector: 'Lowtown Community',
-      tonnageMonthly: '6.4 Tons',
-      primaryMaterial: 'Excavation Silt & Aggregates',
-      severity: 'Moderate',
-      drainAffiliation: 'Drain D-201',
-      recurrenceRate: 'Rain-Triggered Sedimentation',
-      trend: '+4% vs Last Month'
-    },
-    {
-      id: 'HOT-04',
-      name: 'North University Taxi Rank Outfall',
-      sector: 'North Campus Zone',
-      tonnageMonthly: '8.1 Tons',
-      primaryMaterial: 'Plastic Bottles & Sachet Bags',
-      severity: 'Critical',
-      drainAffiliation: 'Drain D-104',
-      recurrenceRate: 'Daily Commuter Litter',
-      trend: '+22% vs Last Month'
-    }
-  ];
+  const wasteHotspots = dynamicHotspots;
+
+  // Real-time material classification percentages derived from live reports & incidents
+  const incidentCategories = (incidents || []).reduce((acc, inc) => {
+    const t = (inc.refuseType || inc.category || '').toLowerCase();
+    const w = Number(inc.weight_quantity || inc.weightQuantity || (parseFloat(String(inc.estimatedWasteVolume || '').replace(/[^\d.]/g, '')) || 50));
+    if (t.includes('plastic') || t.includes('bottle') || t.includes('sachet')) acc.plastic += w;
+    else if (t.includes('silt') || t.includes('sediment') || t.includes('sand')) acc.silt += w;
+    else if (t.includes('organic') || t.includes('food') || t.includes('vegetative')) acc.organic += w;
+    else acc.other += w;
+    return acc;
+  }, { plastic: 0, silt: 0, organic: 0, other: 0 });
+
+  const totalCatKg = (incidentCategories.plastic + incidentCategories.silt + incidentCategories.organic + incidentCategories.other) || 1;
+  const hasIncidentData = (incidentCategories.plastic + incidentCategories.silt + incidentCategories.organic + incidentCategories.other) > 0;
+  const plasticPct = hasIncidentData ? Math.round((incidentCategories.plastic / totalCatKg) * 100) : 0;
+  const siltPct = hasIncidentData ? Math.round((incidentCategories.silt / totalCatKg) * 100) : 0;
+  const organicPct = hasIncidentData ? Math.round((incidentCategories.organic / totalCatKg) * 100) : 0;
+  const otherPct = hasIncidentData ? Math.max(0, 100 - plasticPct - siltPct - organicPct) : 0;
 
   // Total refuse stats from citizen rewards
   const totalRefuseKgReported = citizens.reduce((acc, c) => acc + Number(c.refuseKgReported || 0), 0);
@@ -508,71 +485,77 @@ export default function WasteIntelligenceView({
 
       {/* Tab 3: Hotspots Grid */}
       {selectedTab === 'hotspots' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {wasteHotspots.map((hotspot) => {
-            const isCritical = hotspot.severity === 'Critical';
+        wasteHotspots.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {wasteHotspots.map((hotspot) => {
+              const isCritical = hotspot.severity === 'Critical';
 
-            return (
-              <div
-                key={hotspot.id}
-                className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/60 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-data-mono text-[11px] font-bold text-outline">{hotspot.id}</span>
-                        <span
-                          className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-                            isCritical ? 'bg-error-container text-on-error-container' : 'bg-amber-100 text-amber-900'
-                          }`}
-                        >
-                          {hotspot.severity} Hotspot
-                        </span>
+              return (
+                <div
+                  key={hotspot.id}
+                  className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/60 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-data-mono text-[11px] font-bold text-outline">{hotspot.id}</span>
+                          <span
+                            className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                              isCritical ? 'bg-error-container text-on-error-container' : 'bg-amber-100 text-amber-900'
+                            }`}
+                          >
+                            {hotspot.severity} Hotspot
+                          </span>
+                        </div>
+                        <h3 className="font-title-md text-[17px] font-bold text-on-surface mt-1">
+                          {hotspot.name}
+                        </h3>
+                        <span className="text-[12px] text-on-surface-variant">{hotspot.sector}</span>
                       </div>
-                      <h3 className="font-title-md text-[17px] font-bold text-on-surface mt-1">
-                        {hotspot.name}
-                      </h3>
-                      <span className="text-[12px] text-on-surface-variant">{hotspot.sector}</span>
+
+                      <div className="text-right">
+                        <span className="text-[11px] text-outline uppercase font-label-caps">Est. Accumulation</span>
+                        <div className="font-display-lg text-[20px] font-bold text-on-surface">{hotspot.tonnageMonthly}</div>
+                      </div>
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-[11px] text-outline uppercase font-label-caps">Est. Accumulation</span>
-                      <div className="font-display-lg text-[20px] font-bold text-on-surface">{hotspot.tonnageMonthly}</div>
+                    <div className="space-y-2 bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/40 text-[13px] mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-outline">Primary Refuse:</span>
+                        <span className="font-semibold text-on-surface text-right">{hotspot.primaryMaterial}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-outline">Associated Drainage Asset:</span>
+                        <span className="font-bold text-primary">{hotspot.drainAffiliation}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-outline">Recurrence Profile:</span>
+                        <span className="font-semibold text-on-surface">{hotspot.recurrenceRate}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2 bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/40 text-[13px] mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-outline">Primary Refuse:</span>
-                      <span className="font-semibold text-on-surface text-right">{hotspot.primaryMaterial}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-outline">Associated Drainage Asset:</span>
-                      <span className="font-bold text-primary">{hotspot.drainAffiliation}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-outline">Recurrence Profile:</span>
-                      <span className="font-semibold text-on-surface">{hotspot.recurrenceRate}</span>
-                    </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-outline-variant/40">
+                    <span className="text-[12px] font-semibold text-risk-critical">{hotspot.trend}</span>
+                    <button
+                      type="button"
+                      onClick={() => onOpenDispatch && onOpenDispatch({ id: hotspot.drainAffiliation, name: hotspot.name })}
+                      className="bg-primary text-on-primary px-4 py-2 rounded-xl text-[12px] font-label-caps hover:bg-surface-tint transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">local_shipping</span>
+                      Deploy Refuse Sweep
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-outline-variant/40">
-                  <span className="text-[12px] font-semibold text-risk-critical">{hotspot.trend}</span>
-                  <button
-                    type="button"
-                    onClick={() => onOpenDispatch && onOpenDispatch({ id: hotspot.drainAffiliation, name: hotspot.name })}
-                    className="bg-primary text-on-primary px-4 py-2 rounded-xl text-[12px] font-label-caps hover:bg-surface-tint transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">local_shipping</span>
-                    Deploy Refuse Sweep
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-outline text-[13px] bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/60">
+            No chronic waste hotspots detected across monitored drainage segments.
+          </div>
+        )
       )}
 
       {/* Tab 4: Waste Types & Material Classification */}
@@ -582,45 +565,45 @@ export default function WasteIntelligenceView({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
               <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Plastics &amp; Polymers</span>
-              <div className="text-[28px] font-bold text-on-surface mt-1">44%</div>
+              <div className="text-[28px] font-bold text-on-surface mt-1">{plasticPct}%</div>
               <span className="text-[12px] text-risk-critical font-bold mt-0.5 block">
-                18.8 Tons Diverted this Month
+                {(incidentCategories.plastic / 1000).toFixed(1)} Tons Logged
               </span>
               <div className="w-full bg-surface-container-highest rounded-full h-1.5 mt-2">
-                <div className="bg-risk-critical h-1.5 rounded-full w-[44%]"></div>
+                <div className="bg-risk-critical h-1.5 rounded-full" style={{ width: `${plasticPct}%` }}></div>
               </div>
             </div>
 
             <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
               <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Silt &amp; Soil Runoff</span>
-              <div className="text-[28px] font-bold text-on-surface mt-1">32%</div>
+              <div className="text-[28px] font-bold text-on-surface mt-1">{siltPct}%</div>
               <span className="text-[12px] text-risk-high font-bold mt-0.5 block">
-                13.7 Tons Extracted from Culverts
+                {(incidentCategories.silt / 1000).toFixed(1)} Tons in Conduits
               </span>
               <div className="w-full bg-surface-container-highest rounded-full h-1.5 mt-2">
-                <div className="bg-risk-high h-1.5 rounded-full w-[32%]"></div>
+                <div className="bg-risk-high h-1.5 rounded-full" style={{ width: `${siltPct}%` }}></div>
               </div>
             </div>
 
             <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
               <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Organic &amp; Vegetative</span>
-              <div className="text-[28px] font-bold text-on-surface mt-1">16%</div>
+              <div className="text-[28px] font-bold text-on-surface mt-1">{organicPct}%</div>
               <span className="text-[12px] text-primary font-bold mt-0.5 block">
-                6.8 Tons Composted
+                {(incidentCategories.organic / 1000).toFixed(1)} Tons Recorded
               </span>
               <div className="w-full bg-surface-container-highest rounded-full h-1.5 mt-2">
-                <div className="bg-primary h-1.5 rounded-full w-[16%]"></div>
+                <div className="bg-primary h-1.5 rounded-full" style={{ width: `${organicPct}%` }}></div>
               </div>
             </div>
 
             <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
-              <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Recycled Material Yield</span>
-              <div className="text-[28px] font-bold text-primary mt-1">78.4%</div>
+              <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Other Refuse Material</span>
+              <div className="text-[28px] font-bold text-primary mt-1">{otherPct}%</div>
               <span className="text-[12px] text-on-surface-variant font-medium mt-0.5 block">
-                Winneba EcoRecycle Facility
+                {(incidentCategories.other / 1000).toFixed(1)} Tons General Waste
               </span>
               <div className="w-full bg-surface-container-highest rounded-full h-1.5 mt-2">
-                <div className="bg-primary h-1.5 rounded-full w-[78%]"></div>
+                <div className="bg-primary h-1.5 rounded-full" style={{ width: `${otherPct}%` }}></div>
               </div>
             </div>
           </div>

@@ -307,10 +307,10 @@ export default function OpenStreetMapViewer({
     // 1. Draw Drainage Polylines / Flow Network on OpenStreetMap
     if (visibleLayers.drains && visibleLayers.flowLines) {
       const mainPathCoords = [
-        [5.3645, -0.6280], // D-104 North Campus
-        [5.3562, -0.6231], // D-102 Central Market
-        [5.3489, -0.6190], // D-117 South Residential
-        [5.3412, -0.6145]  // D-108 Fisheries Landing Outfall
+        [5.3645, -0.6280], // North Campus
+        [5.3562, -0.6231], // Central Market
+        [5.3489, -0.6190], // South Residential
+        [5.3412, -0.6145]  // Fisheries Landing Outfall
       ];
 
       // Buffer corridor
@@ -342,9 +342,9 @@ export default function OpenStreetMapViewer({
 
       // Lateral swale connecting Lowtown
       const swale = L.polyline([
-        [5.3510, -0.6310], // D-201 Lowtown
-        [5.3562, -0.6231], // D-102 Central Market
-        [5.3601, -0.6160]  // D-305 Hospital By-pass
+        [5.3510, -0.6310], // Lowtown
+        [5.3562, -0.6231], // Central Market
+        [5.3601, -0.6160]  // Hospital By-pass
       ], {
         color: '#436b58',
         weight: 3,
@@ -384,7 +384,7 @@ export default function OpenStreetMapViewer({
             <strong>Soil Saturation:</strong> 88% (Runoff Threshold Exceeded)
           </p>
           <div style="background: #ffdad6; color: #93000a; font-size: 11px; padding: 4px 6px; border-radius: 4px; margin-bottom: 8px; font-weight: 600;">
-            Primary Culvert D-102 Surcharge Risk: 94%
+            Primary Culvert Storm Surcharge Risk: Elevated
           </div>
           <button
             type="button"
@@ -474,14 +474,14 @@ export default function OpenStreetMapViewer({
 
             <div style="font-size: 11px; margin-bottom: 6px; color: #40493d;">
               <strong>Sector:</strong> ${seg.sector}<br/>
-              <strong>Flow Capacity:</strong> ${seg.flowCapacityText || '1,200 L/s'}<br/>
-              <strong>Compound Risk Score:</strong> <b>${seg.riskScore || 85}/100</b>
+              <strong>Flow Capacity:</strong> ${seg.flowCapacityText || 'Nominal'}<br/>
+              <strong>Compound Risk Score:</strong> <b>${seg.riskScore ?? 0}/100</b>
             </div>
 
             <div style="background: #f5f3f3; padding: 6px 8px; border-radius: 6px; margin-bottom: 8px; font-size: 11px;">
               <span style="color: #707a6b;">Open-Meteo Surcharge Threat:</span><br/>
               <strong style="color: ${isCritical ? '#ba1a1a' : '#206d1f'};">
-                ${isCritical ? '⚠️ Surcharge ETA: ~18 mins' : '✓ Safe Hydraulic Clearance'}
+                ${isCritical ? '⚠️ High Overtopping Risk' : '✓ Safe Hydraulic Clearance'}
               </strong>
             </div>
 
@@ -632,7 +632,7 @@ export default function OpenStreetMapViewer({
 
           <div style="font-size: 11px; margin-bottom: 6px; color: #40493d; line-height: 1.4;">
             <div><strong>ID:</strong> <span style="font-family: monospace;">${item.id || 'INC'}</span> • <strong>Status:</strong> <span style="text-transform: capitalize;">${item.status || 'Active'}</span></div>
-            <div><strong>Sector / Address:</strong> ${item.sector || item.address || 'Winneba Catchment'}</div>
+            <div><strong>Sector / Address:</strong> ${item.sector || item.address || 'Catchment Area'}</div>
             <div><strong>GPS:</strong> <span style="font-family: monospace;">${lat.toFixed(4)}°N, ${Math.abs(lng).toFixed(4)}°W</span></div>
             ${item.refuseType ? `<div><strong>Refuse Type:</strong> ${item.refuseType}</div>` : ''}
             ${(item.weightQuantityFormatted || item.weight_quantity || item.estimatedWasteVolume) ? `<div><strong>Refuse Weight / Quantity:</strong> <span style="font-family: monospace; font-weight: bold; color: #206d1f;">${item.weightQuantityFormatted || (item.weight_quantity ? `${item.weight_quantity} kg` : item.estimatedWasteVolume)}</span></div>` : ''}

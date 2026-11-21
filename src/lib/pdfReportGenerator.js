@@ -105,11 +105,11 @@ export const generateMunicipalPdfReport = ({
   let currentY = 74;
 
   // 2. Executive Key Metric Highlights (Cards)
-  const totalReports = incidents.length || 19;
-  const criticalDrains = drainageSegments.filter(s => s.riskLevel === 'critical' || s.riskScore >= 80).length || 2;
-  const wasteTons = kpis?.wasteRemoved?.value ?? '38.4';
-  const weatherTemp = weather?.temp || '28°C';
-  const weatherRain = weather?.rain24hMm ? `${weather.rain24hMm} mm` : '28.5 mm';
+  const totalReports = incidents.length;
+  const criticalDrains = drainageSegments.filter(s => s.riskLevel === 'critical' || s.riskScore >= 80).length;
+  const wasteTons = kpis?.wasteRemoved?.value ?? '0.0';
+  const weatherTemp = weather?.temp || '--°C';
+  const weatherRain = weather?.rain24hMm != null ? `${weather.rain24hMm} mm` : '0.0 mm';
 
   const cardWidth = 43;
   const cardHeight = 20;
@@ -170,11 +170,7 @@ export const generateMunicipalPdfReport = ({
       startY: currentY,
       head: [['ID', 'Conduit Name', 'Sector / Community', 'Blockage', 'Risk Score', 'Risk Level', 'Status']],
       body: drainageRows.length > 0 ? drainageRows : [
-        ['D-102', 'Central Market Swale Mainline', 'Central Market', '85%', '92/100', 'CRITICAL', 'Action Required'],
-        ['D-104', 'Commercial Street Box Culvert', 'Lowtown District', '75%', '84/100', 'CRITICAL', 'Action Required'],
-        ['D-108', 'Fishing Harbor Drainage Swale', 'Fishing Harbor', '60%', '68/100', 'HIGH', 'Monitoring'],
-        ['D-117', 'Zongo Secondary Drain Culvert', 'Zongo Community', '45%', '52/100', 'MODERATE', 'Nominal'],
-        ['D-201', 'North Campus Siphon Outfall', 'North Campus', '30%', '35/100', 'HEALTHY', 'Nominal']
+        ['-', 'No drainage conduits recorded', '-', '0%', '0/100', 'NOMINAL', 'Nominal']
       ],
       theme: 'grid',
       headStyles: {
@@ -226,10 +222,7 @@ export const generateMunicipalPdfReport = ({
       startY: currentY,
       head: [['Incident ID', 'Description', 'Sector', 'Severity', 'Reported By', 'Status']],
       body: incidentRows.length > 0 ? incidentRows : [
-        ['REP-01', 'Severe Sachet Plastic Blockage at Market Outfall', 'Central Market', 'CRITICAL', 'Citizen Champion', 'ASSIGNED'],
-        ['REP-02', 'Collapsed Masonry Wall Restricting Water Inflow', 'Lowtown Swale', 'HIGH', 'Municipal Inspector', 'IN-PROGRESS'],
-        ['REP-03', 'Sediment Silt Washout from Heavy Roadwork', 'Zongo Corridor', 'MODERATE', 'Citizen App', 'UNRESOLVED'],
-        ['REP-04', 'Organic Refuse Clogging Tidal Outfall Grate', 'Fishing Harbor', 'HIGH', 'Harbor Master', 'RESOLVED']
+        ['-', 'No incidents currently recorded', '-', 'NOMINAL', '-', 'RESOLVED']
       ],
       theme: 'grid',
       headStyles: {
@@ -271,11 +264,7 @@ export const generateMunicipalPdfReport = ({
       startY: currentY,
       head: [['Officer / Contributor', 'Email', 'Role', 'Department', 'Status', 'Reports Submitted']],
       body: userRows.length > 0 ? userRows : [
-        ['Kwame Mensah', 'kwame.mensah@winneba.gov.gh', 'Municipal Officer', 'Operations Command', 'Active', '12'],
-        ['Abena Osei', 'abena.osei@winneba.gov.gh', 'Supervisor', 'Field Operations', 'Active', '8'],
-        ['Dr. Joseph Ansah', 'admin@winneba.gov.gh', 'Administrator', 'Municipal IT & Security', 'Active', '4'],
-        ['Kofi Boateng', 'kofi.boateng@gmail.com', 'Citizen Champion', 'Market Watch', 'Active', '14'],
-        ['Ama Serwaa', 'ama.serwaa@gmail.com', 'Citizen Champion', 'Fishing Harbor Watch', 'Active', '9']
+        ['-', 'No users currently registered', '-', '-', '-', '0']
       ],
       theme: 'grid',
       headStyles: {

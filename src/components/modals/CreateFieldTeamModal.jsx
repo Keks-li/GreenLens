@@ -43,7 +43,7 @@ export default function CreateFieldTeamModal({ isOpen, onClose, onCreateTeam }) 
         contact: contact.trim() || '+233 24 000 0000',
         specialization,
         vehicle,
-        membersCount: Number(membersCount) || 6,
+        membersCount: Number(membersCount) || 4,
         currentLocation,
         avatarUrl,
         vehicleImageUrl,
@@ -93,7 +93,7 @@ export default function CreateFieldTeamModal({ isOpen, onClose, onCreateTeam }) 
               <input
                 type="text"
                 required
-                placeholder="e.g. Bus Stop Boys Rapid Unit"
+                placeholder="e.g. Municipal Rapid Response Unit"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl px-3.5 py-2.5 text-[13.5px] focus:ring-2 focus:ring-primary focus:outline-none"
@@ -107,7 +107,7 @@ export default function CreateFieldTeamModal({ isOpen, onClose, onCreateTeam }) 
               <input
                 type="text"
                 required
-                placeholder="e.g. Kwame Appiah (Captain)"
+                placeholder="e.g. Squad Captain"
                 value={lead}
                 onChange={(e) => setLead(e.target.value)}
                 className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl px-3.5 py-2.5 text-[13.5px] focus:ring-2 focus:ring-primary focus:outline-none"
@@ -211,7 +211,7 @@ export default function CreateFieldTeamModal({ isOpen, onClose, onCreateTeam }) 
             </label>
             <input
               type="text"
-              placeholder="e.g. Winneba Lorry Station / Bus Stop Junction"
+              placeholder="e.g. Municipal Base / Works Depot"
               value={currentLocation}
               onChange={(e) => setCurrentLocation(e.target.value)}
               className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl px-3.5 py-2.5 text-[13.5px] focus:ring-2 focus:ring-primary focus:outline-none"

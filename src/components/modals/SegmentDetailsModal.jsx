@@ -10,7 +10,7 @@ export default function SegmentDetailsModal({
 
   // What-If Simulation State
   const [simulatedRainfall, setSimulatedRainfall] = useState(0); // 0mm to 100mm
-  const [simulatedBlockage, setSimulatedBlockage] = useState(segment.blockagePercent || 80);
+  const [simulatedBlockage, setSimulatedBlockage] = useState(Number(segment.blockagePercent ?? 0));
 
   // Dynamic calculations
   const calculatedRiskScore = Math.min(

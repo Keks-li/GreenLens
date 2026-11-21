@@ -5,6 +5,7 @@ import RiskSummary from '../dashboard/RiskSummary';
 import AIPriorityList from '../dashboard/AIPriorityList';
 
 export default function DashboardView({
+  currentUser,
   kpis,
   drainageSegments = [],
   incidents = [],
@@ -42,7 +43,7 @@ export default function DashboardView({
     }
   });
   const highRiskCommunitiesCount = highRiskSectors.size || (criticalDrainsCount > 0 ? criticalDrainsCount : 0);
-  const rainForecastHours = weather?.rainForecastHours || 18;
+  const rainForecastHours = weather?.rainForecastHours ?? null;
 
   // Recent 5 live reports directly from database
   const recentIncidents = (incidents || []).slice(0, 5);
@@ -53,6 +54,7 @@ export default function DashboardView({
   // Dynamic time-of-day greeting
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const officerName = currentUser?.name || (selectedMunicipality?.name ? `${selectedMunicipality.name} Officer` : 'Officer');
 
   return (
     <div className="flex flex-col w-full">
@@ -63,10 +65,10 @@ export default function DashboardView({
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-[11px] font-bold tracking-wide uppercase mb-2 border border-[#bbf7d0]">
               <span className="material-symbols-outlined text-[15px] text-primary">location_on</span>
-              <span>{selectedMunicipality?.name || 'Winneba Municipal Assembly'}</span>
+              <span>{selectedMunicipality?.name || 'Municipal Assembly'}</span>
             </div>
             <h1 className="font-headline-lg text-on-surface font-bold text-[24px] sm:text-[30px] tracking-tight">
-              {greeting}, Municipal Officer
+              {greeting}, {officerName}
             </h1>
             <p className="font-body-md text-on-surface-variant text-[13.5px] sm:text-[14.5px] mt-0.5">
               Live environmental telemetry, drainage network health, and active incident response operations.
@@ -233,9 +235,9 @@ export default function DashboardView({
                             <div className="flex items-center gap-2 text-[11.5px] text-outline mt-0.5 truncate">
                               <span className="font-data-mono">{item.id}</span>
                               <span>•</span>
-                              <span>{item.sector || 'Winneba Catchment'}</span>
+                              <span>{item.sector || selectedMunicipality?.name || 'Catchment Area'}</span>
                               <span>•</span>
-                              <span>{item.reportedAt || 'Recent'}</span>
+                              <span>{item.reportedAt || (item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent')}</span>
                             </div>
                           </div>
                         </div>
@@ -315,7 +317,7 @@ export default function DashboardView({
                               {team.name}
                             </div>
                             <div className="text-[11px] text-on-surface-variant truncate">
-                              Lead: {team.lead} • {team.vehicle || 'Truck'}
+                              Lead: {team.lead}{team.vehicle ? ` • ${team.vehicle}` : ''}
                             </div>
                           </div>
                         </div>
@@ -348,7 +350,7 @@ export default function DashboardView({
 
                           <button
                             type="button"
-                            onClick={() => onDispatchAction && onDispatchAction({ teamId: team.id, teamName: team.name, drainName: `Directive to ${team.name}` })}
+                            onClick={() => onDispatchAction && onDispatchAction({ teamId: team.id, teamName: team.name, drainName: team.name })}
                             className="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary cursor-pointer transition-all hover:scale-105"
                             title="Dispatch this crew"
                           >

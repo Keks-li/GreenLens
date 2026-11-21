@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Read Supabase environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) || 'https://miokadzeiggrfybmmijs.supabase.co';
+const supabaseAnonKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) || 'sb_publishable_m9z9_SQUw7O3seUf6zgLhA_5jqTzcLJ';
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
@@ -357,7 +357,7 @@ export const dataService = {
           allIncidents.filter(i => i.status === 'resolved').length;
 
         const totalKgCleared = allRewards.reduce((sum, r) => sum + Number(r.refuse_kg_cleared || 0), 0);
-        const wasteTons = totalKgCleared > 0 ? Math.round((totalKgCleared / 1000) * 10) / 10 : 2.4;
+        const wasteTons = totalKgCleared > 0 ? Math.round((totalKgCleared / 1000) * 10) / 10 : 0.0;
 
         return {
           reportsToday: { value: totalReportsCount || 0, change: '+12%', trend: 'up' },
@@ -628,14 +628,14 @@ export const dataService = {
             drainId: s.id,
             drainName: s.name || `Drain Segment ${s.id}`,
             sector: s.sector || 'Municipal Catchment',
-            riskScore: s.riskScore || 75,
-            riskLevel: s.riskLevel || 'critical',
-            blockagePercent: s.blockagePercent || 65,
-            timeWindow: s.riskScore >= 80 ? '2 hours' : '4 hours',
-            description: s.aiDirective || `Silt & debris choking detected at ${s.blockagePercent}% blockage. Clearance recommended before next convective rain event.`,
+            riskScore: s.riskScore ?? 0,
+            riskLevel: s.riskLevel || (s.riskScore >= 80 ? 'critical' : 'high'),
+            blockagePercent: s.blockagePercent ?? 0,
+            timeWindow: (s.riskScore ?? 0) >= 80 ? '2 hours' : '4 hours',
+            description: s.aiDirective || `Silt & debris choking detected at ${s.blockagePercent ?? 0}% blockage. Clearance recommended before next convective rain event.`,
             recommendedTeam: 'Rapid Response Unit',
-            suggestedEquipment: s.blockagePercent >= 70 ? 'Hydro-jet vacuum excavator + heavy crew' : 'Desilting tools & flatbed truck',
-            priority: s.riskScore >= 80 ? 'Critical' : 'High',
+            suggestedEquipment: (s.blockagePercent ?? 0) >= 70 ? 'Hydro-jet vacuum excavator + heavy crew' : 'Desilting tools & flatbed truck',
+            priority: (s.riskScore ?? 0) >= 80 ? 'Critical' : 'High',
             imageUrl: s.imageUrl
           }));
         }
@@ -646,89 +646,8 @@ export const dataService = {
     return [];
   },
 
-  // Default Field Operations Teams including Bus Stop Boys and specialized municipal units
-  defaultTeams: [
-    {
-      id: 'team-bsb',
-      name: 'Bus Stop Boys Rapid Response Crew',
-      lead: 'Kwame Appiah (Captain)',
-      specialization: 'High-Density Urban Drainage & Rapid Sludge Desilting',
-      membersCount: 12,
-      status: 'Available',
-      currentLocation: 'Winneba Lorry Station / Bus Stop Junction',
-      vehicle: 'Flatbed Truck + Desilting Jet (GH-4412-24)',
-      rating: 4.9,
-      activeTasks: 0,
-      contact: '+233 24 819 4022',
-      radioChannel: 'VHF Ch 04 (BusStop-Direct)',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-      vehicleImageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      id: 'team-alpha',
-      name: 'Rapid Response Alpha',
-      lead: 'Emmanuel Darko',
-      specialization: 'Hydro-jetting, Culvert Flushing & Heavy Sump Evacuation',
-      membersCount: 8,
-      status: 'On Mission',
-      currentLocation: 'Central Market Flood Basin',
-      vehicle: 'Isuzu Vac-Jet Tanker (GT-8812-23)',
-      rating: 4.9,
-      activeTasks: 1,
-      contact: '+233 24 555 0192',
-      radioChannel: 'VHF Ch 01 (Command-Tac)',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-      vehicleImageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      id: 'team-bravo',
-      name: 'Rapid Response Bravo',
-      lead: 'Kofi Boateng',
-      specialization: 'Manual Channel Desilting, Trash Sieve Extraction & Boom Repair',
-      membersCount: 10,
-      status: 'Available',
-      currentLocation: 'Mankessim Road Depot',
-      vehicle: 'Mitsubishi Heavy Tipper (CR-3301-22)',
-      rating: 4.8,
-      activeTasks: 0,
-      contact: '+233 20 888 4120',
-      radioChannel: 'VHF Ch 02 (Desilt-Alpha)',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
-      vehicleImageUrl: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      id: 'team-eco',
-      name: 'Eco-Warriors Volunteer Brigade',
-      lead: 'Abena Osei',
-      specialization: 'Plastic Waste Interception & Sachet Bag Community Cleanups',
-      membersCount: 25,
-      status: 'Available',
-      currentLocation: 'University of Education South Campus Drain',
-      vehicle: 'Utility Vans & Heavy Push Carts',
-      rating: 5.0,
-      activeTasks: 0,
-      contact: '+233 55 333 9011',
-      radioChannel: 'VHF Ch 05 (Volunteer-Net)',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-      vehicleImageUrl: 'https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      id: 'team-eng',
-      name: 'Engineering & Sluice Maintenance Team',
-      lead: 'Ing. Samuel Mensah',
-      specialization: 'Sluice Gate Hydraulics, Concrete Armor Repair & Excavation',
-      membersCount: 6,
-      status: 'Standby',
-      currentLocation: 'Winneba Municipal Works Yard',
-      vehicle: 'CAT 320 Excavator + Lowbed (GH-9901-21)',
-      rating: 4.9,
-      activeTasks: 0,
-      contact: '+233 24 777 6533',
-      radioChannel: 'VHF Ch 03 (Heavy-Ops)',
-      avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80',
-      vehicleImageUrl: 'https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&w=600&q=80'
-    }
-  ],
+  // Default Field Operations Teams
+  defaultTeams: [],
 
   // Fetch available field teams
   async getFieldTeams(municipalityId = 'winneba') {
@@ -740,19 +659,13 @@ export const dataService = {
         }
         const { data, error } = await query.order('name');
         if (!error && data?.length) {
-          const dbTeams = data.map(mapFieldTeam);
-          // Check if Bus Stop Boys is in DB, otherwise merge default rich teams
-          const hasBsb = dbTeams.some(t => t.id === 'team-bsb' || t.name.includes('Bus Stop'));
-          if (!hasBsb) {
-            return [...this.defaultTeams.filter(t => t.id === 'team-bsb'), ...dbTeams];
-          }
-          return dbTeams;
+          return data.map(mapFieldTeam);
         }
       } catch (err) {
         console.error('Supabase getFieldTeams error:', err);
       }
     }
-    return this.defaultTeams;
+    return [];
   },
 
   // Register / Add a new Field Dispatch Team (Admin capability)
@@ -796,10 +709,8 @@ export const dataService = {
       }
     }
 
-    // Fallback: also add to defaultTeams in memory
-    const fallbackMapped = mapFieldTeam(newTeam);
-    this.defaultTeams = [fallbackMapped, ...this.defaultTeams];
-    return fallbackMapped;
+    // Fallback: return mapped new team
+    return mapFieldTeam(newTeam);
   },
 
   // Update Field Team status
@@ -837,6 +748,29 @@ export const dataService = {
         const { data, error } = await query.order('dispatched_at', { ascending: false });
         if (!error && data?.length) {
           return data.map(mapDispatchAssignment);
+        }
+
+        // Support work_orders table as standard schema alternative
+        const { data: woData, error: woError } = await supabase
+          .from('work_orders')
+          .select('*, incidents(*), field_teams(*)')
+          .order('created_at', { ascending: false });
+        if (!woError && woData?.length) {
+          return woData.map((wo) => ({
+            id: String(wo.id),
+            missionCode: `WO-${wo.id}`,
+            drainId: wo.incidents?.drain_id ? `Drain ${wo.incidents.drain_id}` : (wo.incident_id ? `Incident #${wo.incident_id}` : 'Catchment Target'),
+            targetLocation: wo.incidents?.sector || 'Catchment Area',
+            assignedTeam: wo.field_teams?.name || 'Assigned Field Team',
+            teamId: wo.team_id,
+            lead: 'Operations Command',
+            priority: wo.priority || 'Medium',
+            timeRemaining: 'Active',
+            directive: wo.instructions || 'Execute field inspection and clearance.',
+            equipment: 'Specialized Response Gear',
+            progress: wo.status === 'COMPLETED' ? 100 : wo.status === 'IN_PROGRESS' ? 50 : 15,
+            status: wo.status?.toLowerCase() || 'dispatched'
+          }));
         }
       } catch (err) {
         console.error('Supabase getDispatches error:', err);
@@ -955,7 +889,7 @@ export const dataService = {
     return { id, timestamp: timestampStr, user, action, entity, details };
   },
 
-  // Fetch Users (seeded admin accounts, admin-created system users, and citizen accounts)
+  // Fetch Users (admin-created system users and citizen accounts from database)
   async getUsers(municipalityId = 'winneba') {
     let localCreated = [];
     try {
@@ -963,74 +897,125 @@ export const dataService = {
       if (stored) localCreated = JSON.parse(stored);
     } catch {}
 
-    const defaultSeed = [
-      {
-        id: 'admin-01',
-        name: 'System Administrator',
-        email: 'admin@greenlens.app',
-        phone: '+233 33 232 2011',
-        role: 'System Administrator',
-        department: 'Municipal Command & IT Governance',
-        status: 'Active',
-        municipalityId: 'winneba'
-      },
-      {
-        id: 'admin-02',
-        name: 'Dr. Joseph Ansah (SysAdmin)',
-        email: 'admin@winneba.gov.gh',
-        phone: '+233 33 232 2012',
-        role: 'System Administrator',
-        department: 'Municipal Assembly IT & Security',
-        status: 'Active',
-        municipalityId: 'winneba'
-      }
-    ];
-
     if (isSupabaseConfigured && supabase) {
       try {
-        const [sysRes, authRes] = await Promise.all([
-          supabase.from('system_users').select('*').order('created_at', { ascending: false }),
-          supabase.from('users').select('*').order('created_at', { ascending: false })
-        ]);
+        let sysUsersData = [];
+        try {
+          const sysRes = await supabase.from('system_users').select('*').order('created_at', { ascending: false });
+          if (!sysRes.error && sysRes.data) sysUsersData = sysRes.data;
+        } catch {}
 
-        const systemUsers = (sysRes.data || []).map(u => ({
+        let authUsersData = [];
+        try {
+          const authRes = await supabase.from('users').select('*').order('created_at', { ascending: false });
+          if (!authRes.error && authRes.data) authUsersData = authRes.data;
+        } catch {}
+
+        const systemUsers = sysUsersData.map(u => ({
           id: u.id,
           name: u.name,
           email: u.email,
-          phone: u.phone || '+233 24 555 0192',
-          role: u.role,
-          department: u.department,
+          phone: u.phone || '',
+          role: u.role || 'Municipal Officer',
+          department: u.department || 'Operations',
           status: u.status || 'Active',
-          municipalityId: u.municipality_id || 'winneba'
+          municipalityId: u.municipality_id || municipalityId
         }));
 
-        const citizenAuthUsers = (authRes.data || []).map(u => {
+        const citizenAuthUsers = authUsersData.map(u => {
           const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email?.split('@')[0] || 'Registered User';
+          const role = u.role === 'MUNICIPAL_ADMIN' || u.role === 'SUPER_ADMIN' 
+            ? 'System Administrator' 
+            : u.role === 'FIELD_MANAGER' 
+            ? 'Field Operations Manager' 
+            : (u.role || 'Citizen Champion');
           return {
             id: u.id,
             name: fullName,
             email: u.email,
-            phone: u.phone || '+233 55 000 0000',
-            role: 'Citizen Champion',
-            department: 'Citizen Mobile Watch',
+            phone: u.phone || '',
+            role,
+            department: u.role?.includes('ADMIN') ? 'Municipal IT & Security' : 'Citizen Mobile Watch',
             status: u.status === 'ACTIVE' ? 'Active' : u.status === 'PENDING_VERIFICATION' ? 'Pending' : 'Active',
-            municipalityId: u.municipality_id || 'winneba'
+            municipalityId: u.municipality_id || municipalityId
           };
         });
 
-        const existingEmails = new Set([...systemUsers.map(u => u.email?.toLowerCase()), ...defaultSeed.map(u => u.email?.toLowerCase())]);
+        const existingEmails = new Set(systemUsers.map(u => u.email?.toLowerCase()).filter(Boolean));
         const uniqueCitizenUsers = citizenAuthUsers.filter(u => u.email && !existingEmails.has(u.email.toLowerCase()));
         const uniqueLocalUsers = localCreated.filter(u => u.email && !existingEmails.has(u.email.toLowerCase()));
 
-        return [...defaultSeed, ...systemUsers, ...uniqueLocalUsers, ...uniqueCitizenUsers];
+        return [...systemUsers, ...uniqueLocalUsers, ...uniqueCitizenUsers];
       } catch (err) {
         console.error('Supabase getUsers error:', err);
       }
     }
 
-    const existingEmails = new Set(defaultSeed.map(u => u.email?.toLowerCase()));
-    const uniqueLocal = localCreated.filter(u => u.email && !existingEmails.has(u.email.toLowerCase()));
-    return [...defaultSeed, ...uniqueLocal];
+    return localCreated;
+  },
+
+  // Authenticate user via deployed Supabase Edge Function
+  async loginViaEdgeFunction(email, password) {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, error: 'Supabase is not configured' };
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: { action: 'login', email, password }
+      });
+      if (error) {
+        let errorMsg = 'Invalid email or password. Please verify your credentials.';
+        try {
+          if (error.context) {
+            const body = await error.context.json();
+            if (body?.error) errorMsg = body.error;
+          }
+        } catch {}
+        return { success: false, error: errorMsg };
+      }
+      if (data?.error || data?.success === false) {
+        return { success: false, error: data?.error || 'Invalid email or password. Please check your credentials.' };
+      }
+      return data;
+    } catch (err) {
+      return { success: false, error: 'Invalid email or password. Please verify your credentials.' };
+    }
+  },
+
+  // Reset user password via Supabase Edge Function (Admin capability)
+  async resetUserPassword({ userId, email }) {
+    if (!isSupabaseConfigured || !supabase) {
+      // Local fallback password generation
+      const tempPassword = `GreenLens@${Math.floor(100000 + Math.random() * 900000)}`;
+      return {
+        success: true,
+        tempPassword,
+        user: { id: userId, email }
+      };
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: { action: 'reset-password', userId, email }
+      });
+      if (error) {
+        return { success: false, error: error.message || 'Password reset failed' };
+      }
+      if (data?.error) {
+        return { success: false, error: data.error };
+      }
+      if (data?.success) {
+        await this.addAuditLog({
+          user: 'Admin Lead (You)',
+          action: 'PASSWORD_RESET',
+          entity: `User ${email || userId}`,
+          details: `Generated new temporary credentials for ${email || userId}.`
+        });
+        return data;
+      }
+      return { success: false, error: 'Failed to reset password' };
+    } catch (err) {
+      return { success: false, error: err.message || 'Network error' };
+    }
   },
 
   // Create/Invite User by Admin
@@ -1061,6 +1046,37 @@ export const dataService = {
     }
 
     if (isSupabaseConfigured && supabase) {
+      // 1. First provision in Supabase Auth via Edge Function with service_role privilege
+      try {
+        const { data: edgeRes, error: edgeErr } = await supabase.functions.invoke('admin-auth', {
+          body: {
+            action: 'create-user',
+            name: userData.name,
+            email: userData.email,
+            phone: userData.phone,
+            role: userData.role,
+            department: userData.department,
+            municipalityId: userData.municipalityId || 'winneba'
+          }
+        });
+
+        if (!edgeErr && edgeRes?.success && edgeRes.user) {
+          await this.addAuditLog({
+            action: 'USER_INVITED',
+            entity: `User ${userData.name}`,
+            details: `Admin provisioned ${userData.email} (${userData.role}) in Supabase Auth. Temp password: ${edgeRes.tempPassword || 'Auto-generated'}.`
+          });
+          return {
+            ...edgeRes.user,
+            tempPassword: edgeRes.tempPassword,
+            syncedWithSupabase: true
+          };
+        }
+      } catch (edgeErr) {
+        console.warn('Edge Function create-user error:', edgeErr);
+      }
+
+      // 2. Direct database table insert fallback
       try {
         const { data, error } = await supabase.from('system_users').insert([payload]).select();
         if (!error && data?.length) {
@@ -1069,7 +1085,7 @@ export const dataService = {
             entity: `User ${userData.name}`,
             details: `Admin provisioned user ${userData.email} with role ${userData.role}.`
           });
-          return { ...data[0], municipalityId: data[0].municipality_id || userData.municipalityId };
+          return { ...data[0], municipalityId: data[0].municipality_id || userData.municipalityId, syncedWithSupabase: true };
         }
       } catch (err) {
         console.error('Supabase createUser error:', err);
@@ -1210,16 +1226,26 @@ export const dataService = {
       );
       if (openMeteoRes.ok) {
         const d = await openMeteoRes.json();
-        const rain24h = (d.hourly?.precipitation || []).slice(0, 24).reduce((a, b) => a + (Number(b) || 0), 0);
+        const hourlyPrecip = d.hourly?.precipitation || [];
+        const rain24h = hourlyPrecip.slice(0, 24).reduce((a, b) => a + (Number(b) || 0), 0);
+        
+        // Find index of first upcoming hour with significant rain (> 0.2mm)
+        const rainHourIndex = hourlyPrecip.findIndex(p => Number(p) > 0.2);
+        const rainForecastHours = rainHourIndex >= 0 ? rainHourIndex : null;
+
+        const maxProb24h = Math.max(...(d.hourly?.precipitation_probability || []).slice(0, 24), 0);
+
         return {
-          temp: `${Math.round(d.current?.temperature_2m || 28)}°C`,
-          condition: d.current?.precipitation > 0 ? 'Precipitation Active' : 'Convective Weather',
-          rainForecastHours: 18,
-          rainProbability: `${Math.max(...(d.hourly?.precipitation_probability || []).slice(0, 24), 85)}%`,
-          wind: `${d.current?.wind_speed_10m || 15} km/h`,
-          humidity: `${d.current?.relative_humidity_2m || 75}%`,
+          temp: `${Math.round(d.current?.temperature_2m ?? 0)}°C`,
+          condition: (d.current?.precipitation || 0) > 0 ? 'Precipitation Active' : 'Clear / Cloudy',
+          rainForecastHours,
+          rainProbability: `${maxProb24h}%`,
+          wind: `${d.current?.wind_speed_10m ?? 0} km/h`,
+          humidity: `${d.current?.relative_humidity_2m ?? 0}%`,
           rain24hMm: Math.round(rain24h * 10) / 10,
-          warning: `Open-Meteo: ${Math.round(rain24h)}mm rainfall projected over next 24h across Winneba catchment.`
+          warning: rain24h > 0
+            ? `Open-Meteo: ${Math.round(rain24h)}mm rainfall projected over next 24h.`
+            : 'Open-Meteo: No heavy precipitation projected over next 24h.'
         };
       }
     } catch (err) {
@@ -1227,14 +1253,14 @@ export const dataService = {
     }
 
     return {
-      temp: '28°C',
-      condition: 'Convective Weather',
-      rainForecastHours: 18,
-      rainProbability: '85%',
-      wind: '18 km/h SW',
-      humidity: '76%',
-      rain24hMm: 28.5,
-      warning: 'Open-Meteo: 28.5mm convective rainfall projected over 24h across Winneba catchment.'
+      temp: '--°C',
+      condition: 'Telemetry Offline',
+      rainForecastHours: null,
+      rainProbability: '0%',
+      wind: '0 km/h',
+      humidity: '0%',
+      rain24hMm: 0,
+      warning: 'Live meteorological telemetry currently offline.'
     };
   },
 
@@ -1262,6 +1288,31 @@ export const dataService = {
             status: c.status || 'Active',
             lastReportAt: c.last_report_at
           }));
+        }
+
+        // Support reward_accounts joined with users as standard schema alternative
+        const { data: accounts, error: accErr } = await supabase
+          .from('reward_accounts')
+          .select('*, users(id, first_name, last_name, email, phone)');
+        if (!accErr && accounts?.length) {
+          return accounts.map(a => {
+            const u = a.users || {};
+            const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email?.split('@')[0] || `User #${a.user_id}`;
+            return {
+              id: String(a.id),
+              userName: fullName,
+              phone: u.phone || '',
+              email: u.email || '',
+              reportsCount: 0,
+              refuseKgReported: 0,
+              refuseKgCleared: 0,
+              rewardPoints: Number(a.points_balance || 0),
+              tier: a.level >= 3 ? 'Gold Contributor' : a.level >= 2 ? 'Silver Contributor' : 'Bronze Contributor',
+              rewardsRedeemedGhs: 0,
+              status: 'Active',
+              lastReportAt: a.updated_at || a.created_at
+            };
+          });
         }
       } catch (err) {
         console.error('Supabase getCitizenRewards error:', err);

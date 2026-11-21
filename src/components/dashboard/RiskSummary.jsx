@@ -3,7 +3,7 @@ import React from 'react';
 export default function RiskSummary({
   criticalDrainsCount = 0,
   highRiskCommunitiesCount = 0,
-  rainForecastHours = 18,
+  rainForecastHours = null,
   onInspectRisk
 }) {
   const isElevated = criticalDrainsCount > 0 || highRiskCommunitiesCount > 0;
@@ -70,7 +70,7 @@ export default function RiskSummary({
             <span className="font-body-md text-on-surface font-semibold text-[13px]">Heavy Rain Influx</span>
           </div>
           <span className="font-title-md text-primary font-bold text-[14px]">
-            {rainForecastHours} hrs
+            {rainForecastHours !== null && rainForecastHours !== undefined ? `${rainForecastHours} hrs` : 'None forecast'}
           </span>
         </div>
       </div>

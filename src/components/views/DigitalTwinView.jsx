@@ -7,7 +7,7 @@ export default function DigitalTwinView({
   onOpenDispatch
 }) {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
-  const [selectedNodeId, setSelectedNodeId] = useState('D-102');
+  const [selectedNodeId, setSelectedNodeId] = useState(drainageSegments[0]?.id || null);
 
   const nodesData = (drainageSegments || []).reduce((acc, seg) => {
     const isCrit = seg.riskLevel === 'critical' || seg.riskScore >= 80;
@@ -44,24 +44,8 @@ export default function DigitalTwinView({
     return acc;
   }, {});
 
-  const firstNodeId = drainageSegments[0]?.id || 'D-102';
-  const currentNode = nodesData[selectedNodeId] || nodesData[firstNodeId] || {
-    id: 'D-102',
-    name: 'Drain D-102',
-    location: 'Winneba Catchment',
-    sector: 'Central Sector',
-    status: 'Healthy',
-    riskLevel: 'healthy',
-    blockagePercent: 0,
-    riskScore: 0,
-    flowCapacityText: '100% / 1000L/s',
-    flowDropNote: 'Telemetry Active',
-    aiInsight: 'Monitoring active.',
-    recommendedAction: 'Routine monitoring.',
-    imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=600&q=80',
-    telemetryLogs: [],
-    coords: { lat: 5.3556, lng: -0.6247 }
-  };
+  const firstNodeId = drainageSegments[0]?.id;
+  const currentNode = nodesData[selectedNodeId] || (firstNodeId ? nodesData[firstNodeId] : null);
 
   const handleSelectNode = (segment) => {
     const id = segment?.id || segment;
@@ -87,7 +71,7 @@ export default function DigitalTwinView({
       </div>
 
       {/* Toggle Button to reopen side panel if closed */}
-      {!isPanelOpen && (
+      {!isPanelOpen && currentNode && (
         <button
           onClick={() => setIsPanelOpen(true)}
           className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20 bg-surface/95 backdrop-blur-md px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-lg border border-outline-variant/60 flex items-center gap-2 text-primary font-bold text-[12px] sm:text-[13px] hover:bg-surface-container transition-all"
@@ -98,6 +82,7 @@ export default function DigitalTwinView({
       )}
 
       {/* Active Side Panel (Right) */}
+      {currentNode ? (
       <div
         className={`absolute top-3 sm:top-6 right-3 sm:right-6 bottom-3 sm:bottom-6 w-[calc(100vw-24px)] sm:w-[400px] max-w-[400px] bg-surface/95 backdrop-blur-xl shadow-2xl rounded-2xl flex flex-col overflow-hidden z-30 transform transition-transform duration-300 border border-outline-variant/60 ${
           isPanelOpen ? 'translate-x-0' : 'translate-x-[120%] pointer-events-none'
@@ -358,6 +343,15 @@ export default function DigitalTwinView({
           </div>
         </div>
       </div>
+      ) : (
+        isPanelOpen && (
+          <div className="absolute top-3 sm:top-6 right-3 sm:right-6 bottom-3 sm:bottom-6 w-[calc(100vw-24px)] sm:w-[400px] max-w-[400px] bg-surface/95 backdrop-blur-xl shadow-2xl rounded-2xl flex flex-col items-center justify-center p-6 text-center z-30 border border-outline-variant/60">
+            <span className="material-symbols-outlined text-4xl text-outline mb-2">hub</span>
+            <h3 className="font-title-md font-bold text-on-surface">No Conduit Node Selected</h3>
+            <p className="text-[13px] text-outline mt-1">Select a conduit node on the GIS map to view real-time hydraulic telemetry.</p>
+          </div>
+        )
+      )}
     </div>
   );
 }

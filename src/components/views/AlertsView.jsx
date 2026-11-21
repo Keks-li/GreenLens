@@ -7,59 +7,24 @@ export default function AlertsView({ currentUser, alertsList: propAlerts, onRefr
   const permissions = getPermissionsForRole(userRole);
   const canBroadcast = permissions.canBroadcastAlerts;
 
-  const [alerts, setAlerts] = useState([
-    {
-      id: 'ALT-2026-09',
-      title: 'Heavy Convective Storm Alert — 18-Hour Forecast Window',
-      category: 'Meteorological Warning',
-      severity: 'Critical',
-      targetSectors: ['Central Market', 'South Residential', 'North Campus Zone'],
-      issuedAt: '2026-08-26 14:15',
-      expiresIn: '16h 45m',
-      status: 'Active Broadcast',
-      message: 'High precipitation event (>60mm) expected. Traders and residents in low-lying market corridors advised to secure goods and avoid clogged swales.',
-      recipientsNotified: 14200
-    },
-    {
-      id: 'ALT-2026-08',
-      title: 'Drain D-102 High Blockage (80%) Alert',
-      category: 'Infrastructure Choke',
-      severity: 'High',
-      targetSectors: ['Central Market Sector'],
-      issuedAt: '2026-08-26 13:40',
-      expiresIn: '6h 15m',
-      status: 'Active Broadcast',
-      message: 'Severe single-use plastic buildup at primary culvert intake. Clearance team dispatched.',
-      recipientsNotified: 4800
-    },
-    {
-      id: 'ALT-2026-07',
-      title: 'Tidal Surge Warning for Coastal Fisheries Outfall',
-      category: 'Hydraulic Coastal Risk',
-      severity: 'Moderate',
-      targetSectors: ['Coastal Fishing Harbor'],
-      issuedAt: '2026-08-26 11:20',
-      expiresIn: '2h 10m',
-      status: 'Monitoring',
-      message: 'Spring high tide expected at 17:30. Sluice gates under manual supervision.',
-      recipientsNotified: 1250
-    }
-  ]);
+  const [alerts, setAlerts] = useState(propAlerts || []);
 
   useEffect(() => {
     if (propAlerts && propAlerts.length > 0) {
       setAlerts(propAlerts.map(a => ({
         id: a.id,
         title: a.title,
-        category: a.alertType || 'Emergency Broadcast',
+        category: a.alertType || a.category || 'Emergency Broadcast',
         severity: a.severity || 'Critical',
-        targetSectors: a.targetZones ? [a.targetZones] : ['All Municipality Zones'],
-        issuedAt: a.issuedAt || 'Recent',
-        expiresIn: a.expiresAt || '12h',
+        targetSectors: a.targetZones ? [a.targetZones] : (a.targetSectors || ['All Municipality Zones']),
+        issuedAt: a.issuedAt || (a.created_at ? new Date(a.created_at).toLocaleString() : 'Recent'),
+        expiresIn: a.expiresAt || a.expiresIn || '12h',
         status: a.status || 'Active Broadcast',
         message: a.message,
-        recipientsNotified: 12000
+        recipientsNotified: a.recipientsNotified ?? a.recipients_count ?? 'All Active Stations'
       })));
+    } else {
+      setAlerts([]);
     }
   }, [propAlerts]);
 
@@ -154,7 +119,8 @@ export default function AlertsView({ currentUser, alertsList: propAlerts, onRefr
         </div>
 
         <div className="space-y-4">
-          {alerts.map((al) => (
+          {alerts.length > 0 ? (
+            alerts.map((al) => (
             <div
               key={al.id}
               className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/60 shadow-card-soft hover:shadow-card-hover transition-all space-y-3"
@@ -180,15 +146,20 @@ export default function AlertsView({ currentUser, alertsList: propAlerts, onRefr
               <div className="flex flex-wrap items-center justify-between gap-3 text-[12px] pt-1">
                 <div className="flex items-center gap-2 text-on-surface-variant">
                   <span className="material-symbols-outlined text-[16px] text-primary">pin_drop</span>
-                  <span>Target Sectors: <strong className="text-on-surface">{al.targetSectors.join(', ')}</strong></span>
+                  <span>Target Sectors: <strong className="text-on-surface">{Array.isArray(al.targetSectors) ? al.targetSectors.join(', ') : al.targetSectors}</strong></span>
                 </div>
                 <div className="flex items-center gap-1.5 text-primary font-bold bg-primary-container px-3 py-1 rounded-full">
                   <span className="material-symbols-outlined text-[16px]">sensors</span>
-                  <span>{al.recipientsNotified?.toLocaleString()} citizens notified</span>
+                  <span>{typeof al.recipientsNotified === 'number' ? `${al.recipientsNotified.toLocaleString()} citizens notified` : al.recipientsNotified}</span>
                 </div>
               </div>
             </div>
-          ))}
+            ))
+          ) : (
+            <div className="text-center py-12 text-outline text-[13px] bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/60">
+              No active public advisories or emergency broadcasts.
+            </div>
+          )}
         </div>
       </div>
 

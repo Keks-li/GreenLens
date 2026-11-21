@@ -62,7 +62,7 @@ export default function DispatchView({
           )}
 
           <button
-            onClick={() => onOpenDispatchModal && onOpenDispatchModal({ id: 'D-102', name: 'Rapid Dispatch Directive' })}
+            onClick={() => onOpenDispatchModal && onOpenDispatchModal({ name: 'Municipal Operations Dispatch' })}
             className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-caps text-[12px] hover:bg-surface-tint shadow-xs transition-all flex items-center gap-2 cursor-pointer font-bold"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -83,7 +83,16 @@ export default function DispatchView({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {missions.length === 0 ? (
+          <div className="bg-surface-container-lowest p-8 rounded-3xl border border-outline-variant/60 text-center space-y-2 shadow-card-soft">
+            <span className="material-symbols-outlined text-outline text-[36px]">assignment_turned_in</span>
+            <h4 className="font-title-md font-bold text-on-surface text-[15px]">No Active Field Missions</h4>
+            <p className="text-on-surface-variant text-[12.5px] max-w-sm mx-auto">
+              All field dispatches have been resolved or no operations are currently underway.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {missions.map((msn) => (
             <div
               key={msn.id}
@@ -161,6 +170,7 @@ export default function DispatchView({
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* Field Fleet Availability */}
@@ -169,56 +179,66 @@ export default function DispatchView({
           Field Squad Readiness &amp; Availability
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {teams.map((team) => (
-            <div
-              key={team.id}
-              className="bg-surface-container-lowest p-5 rounded-3xl border border-outline-variant/60 shadow-card-soft hover:shadow-card-hover transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span
-                    className={`px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase font-data-mono ${
-                      team.status === 'Available'
-                        ? 'bg-primary-container text-on-primary-container border border-[#bbf7d0]'
-                        : 'bg-[#ffedd5] text-risk-high border border-[#fed7aa]'
-                    }`}
-                  >
-                    {team.status}
-                  </span>
-                  <span className="text-[12px] text-primary font-bold bg-primary-container/30 px-2 py-0.5 rounded-full">★ {team.rating}</span>
-                </div>
-
-                <h4 className="font-bold text-on-surface text-[14.5px] leading-snug">{team.name}</h4>
-                <p className="text-[11.5px] text-on-surface-variant mb-1.5">Lead: <strong>{team.lead}</strong></p>
-                <div className="text-[11px] text-outline bg-surface-container-low p-2 rounded-xl border border-outline-variant/30 mb-2 font-medium truncate">
-                  {team.vehicle}
-                </div>
-                {team.contact && (
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[11px] font-data-mono text-primary font-bold">{team.contact}</span>
-                    <a
-                      href={`tel:${team.contact.replace(/\s+/g, '')}`}
-                      className="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-pointer flex items-center justify-center transition-all"
-                      title={`Call ${team.lead}`}
-                    >
-                      <span className="material-symbols-outlined text-[14px] text-emerald-700">call</span>
-                    </a>
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onOpenDispatchModal && onOpenDispatchModal({ id: team.id, name: team.name, drainName: `Directive to ${team.name}` })}
-                className="w-full bg-surface-container hover:bg-primary hover:text-white text-on-surface font-label-caps text-[11px] py-2 rounded-xl transition-all font-bold cursor-pointer flex items-center justify-center gap-1.5"
+        {teams.length === 0 ? (
+          <div className="bg-surface-container-lowest p-8 rounded-3xl border border-outline-variant/60 text-center space-y-2 shadow-card-soft">
+            <span className="material-symbols-outlined text-outline text-[36px]">local_shipping</span>
+            <h4 className="font-title-md font-bold text-on-surface text-[15px]">No Field Squads Available</h4>
+            <p className="text-on-surface-variant text-[12.5px] max-w-sm mx-auto">
+              No registered response units found in the fleet roster. Register a new squad to dispatch directives.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {teams.map((team) => (
+              <div
+                key={team.id}
+                className="bg-surface-container-lowest p-5 rounded-3xl border border-outline-variant/60 shadow-card-soft hover:shadow-card-hover transition-all flex flex-col justify-between"
               >
-                <span className="material-symbols-outlined text-[15px]">send</span>
-                <span>Assign Directive</span>
-              </button>
-            </div>
-          ))}
-        </div>
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className={`px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase font-data-mono ${
+                        team.status === 'Available'
+                          ? 'bg-primary-container text-on-primary-container border border-[#bbf7d0]'
+                          : 'bg-[#ffedd5] text-risk-high border border-[#fed7aa]'
+                      }`}
+                    >
+                      {team.status}
+                    </span>
+                    <span className="text-[12px] text-primary font-bold bg-primary-container/30 px-2 py-0.5 rounded-full">★ {team.rating}</span>
+                  </div>
+
+                  <h4 className="font-bold text-on-surface text-[14.5px] leading-snug">{team.name}</h4>
+                  <p className="text-[11.5px] text-on-surface-variant mb-1.5">Lead: <strong>{team.lead}</strong></p>
+                  <div className="text-[11px] text-outline bg-surface-container-low p-2 rounded-xl border border-outline-variant/30 mb-2 font-medium truncate">
+                    {team.vehicle}
+                  </div>
+                  {team.contact && (
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[11px] font-data-mono text-primary font-bold">{team.contact}</span>
+                      <a
+                        href={`tel:${team.contact.replace(/\s+/g, '')}`}
+                        className="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-pointer flex items-center justify-center transition-all"
+                        title={`Call ${team.lead}`}
+                      >
+                        <span className="material-symbols-outlined text-[14px] text-emerald-700">call</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onOpenDispatchModal && onOpenDispatchModal({ id: team.id, name: team.name, drainName: `Directive to ${team.name}` })}
+                  className="w-full bg-surface-container hover:bg-primary hover:text-white text-on-surface font-label-caps text-[11px] py-2 rounded-xl transition-all font-bold cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[15px]">send</span>
+                  <span>Assign Directive</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

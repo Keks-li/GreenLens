@@ -59,27 +59,27 @@ export async function fetchOpenMeteoForecast(coords = OPEN_METEO_DEFAULT_COORDS)
       }
     };
   } catch (err) {
-    console.warn('Open-Meteo fetch failed, using realistic fallback:', err);
+    console.warn('Open-Meteo fetch failed:', err);
     return {
       success: false,
-      provider: 'Open-Meteo (Hydrological Fallback)',
+      provider: 'Open-Meteo (Offline)',
       current: {
-        temp: '29°C',
-        humidity: '82%',
-        rainCurrentMm: 0.2,
-        windSpeed: '18 km/h',
-        condition: 'Convective Rainclouds',
-        weatherCode: 61
+        temp: '--°C',
+        humidity: '0%',
+        rainCurrentMm: 0,
+        windSpeed: '0 km/h',
+        condition: 'Telemetry Offline',
+        weatherCode: 0
       },
       forecast: {
-        rain24hMm: 28.5,
-        rain48hMm: 64.0,
-        maxProb24h: '95%',
-        dailySums: [3.1, 28.5, 32.0, 4.0, 1.2],
-        dailyDates: ['2026-08-27', '2026-08-28', '2026-08-29', '2026-08-30', '2026-08-31'],
+        rain24hMm: 0,
+        rain48hMm: 0,
+        maxProb24h: '0%',
+        dailySums: [],
+        dailyDates: [],
         hourlyTimes: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-        hourlyRain: [0, 0, 0, 0.2, 0.8, 2.4, 6.8, 8.2, 5.1, 2.0, 1.0, 0.4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        hourlyProb: [10, 15, 20, 45, 75, 95, 100, 100, 90, 70, 40, 20, 10, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        hourlyRain: Array(24).fill(0),
+        hourlyProb: Array(24).fill(0)
       }
     };
   }
@@ -152,7 +152,7 @@ export function calculateCompoundFloodPredictions(drainageSegments = [], meteoDa
   // Calculate Municipal-Wide Flood Index
   const avgRisk = segmentPredictions.length
     ? Math.round(segmentPredictions.reduce((acc, s) => acc + s.compoundRiskScore, 0) / segmentPredictions.length)
-    : 72;
+    : 0;
 
   const criticalDrainsCount = segmentPredictions.filter(s => s.riskLevel === 'critical').length;
   const highDrainsCount = segmentPredictions.filter(s => s.riskLevel === 'high').length;

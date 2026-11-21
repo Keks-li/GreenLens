@@ -28,7 +28,8 @@ export default function AIPriorityList({
 
       {/* List of AI Recommended Actions */}
       <div className="space-y-3 flex-1 overflow-y-auto pr-1">
-        {(priorityActions || []).map((action) => {
+        {(priorityActions || []).length > 0 ? (
+          (priorityActions || []).map((action) => {
           const isCritical = action.riskScore >= 90;
           const isHigh = action.riskScore >= 75 && action.riskScore < 90;
 
@@ -103,7 +104,12 @@ export default function AIPriorityList({
               </div>
             </div>
           );
-        })}
+        })
+        ) : (
+          <div className="text-center py-8 text-outline text-[13px] bg-surface-container-lowest/50 rounded-2xl border border-outline-variant/40">
+            No active AI priority intervention items required.
+          </div>
+        )}
       </div>
     </div>
   );

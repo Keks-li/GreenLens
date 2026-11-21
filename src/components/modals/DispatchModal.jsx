@@ -15,7 +15,7 @@ export default function DispatchModal({
   const [deadlineHours, setDeadlineHours] = useState(4);
   const [instructions, setInstructions] = useState(
     targetItem.suggestedEquipment
-      ? `Deploy ${targetItem.suggestedEquipment}. Focus on clearing sediment and single-use plastics prior to 18h rainfall.`
+      ? `Deploy ${targetItem.suggestedEquipment}. Focus on clearing sediment and single-use plastics to restore full drainage flow.`
       : 'Urgent clearance required. Restore full hydraulic capacity.'
   );
   const [isSubmitting, setIsSubmitting] = useState(false);

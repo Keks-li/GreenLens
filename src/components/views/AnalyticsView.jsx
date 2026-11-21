@@ -44,7 +44,6 @@ export default function AnalyticsView({
     sectorMap[sec].drainCount += 1;
     sectorMap[sec].riskScoreSum += Number(seg.riskScore || 0);
     sectorMap[sec].riskScoreMax = Math.max(sectorMap[sec].riskScoreMax, Number(seg.riskScore || 0));
-    sectorMap[sec].tonnageKg += (Number(seg.blockagePercent || 0) * 120);
   });
 
   (incidents || []).forEach(inc => {
@@ -53,7 +52,7 @@ export default function AnalyticsView({
       sectorMap[sec] = {
         community: sec,
         riskScoreSum: 0,
-        riskScoreMax: 50,
+        riskScoreMax: 0,
         drainCount: 0,
         reportsTotal: 0,
         resolvedCount: 0,
@@ -64,22 +63,22 @@ export default function AnalyticsView({
     if (inc.status === 'resolved' || inc.rawStatus === 'RESOLVED' || inc.rawStatus === 'CLOSED') {
       sectorMap[sec].resolvedCount += 1;
     }
-    const wasteNum = parseFloat(String(inc.estimatedWasteVolume || '100').replace(/[^\d.]/g, '')) || 100;
+    const wasteNum = parseFloat(String(inc.estimatedWasteVolume || inc.weight_quantity || '0').replace(/[^\d.]/g, '')) || 0;
     sectorMap[sec].tonnageKg += wasteNum;
   });
 
   let communityRankings = Object.values(sectorMap).map(item => {
     const avgRisk = item.drainCount > 0 ? Math.round(item.riskScoreSum / item.drainCount) : item.riskScoreMax;
     const finalRisk = Math.max(avgRisk, item.riskScoreMax);
-    const resolvedPercent = item.reportsTotal > 0 ? Math.round((item.resolvedCount / item.reportsTotal) * 100) : 92;
+    const resolvedPercent = item.reportsTotal > 0 ? Math.round((item.resolvedCount / item.reportsTotal) * 100) : 0;
     const tonnageCollected = `${(item.tonnageKg / 1000).toFixed(1)} T`;
-    const responseAvgMinutes = Math.max(15, Math.round(45 - (resolvedPercent / 4)));
+    const responseAvgMinutes = resolvedPercent > 0 ? Math.max(15, Math.round(60 - (resolvedPercent / 2))) : 0;
     const status = finalRisk >= 80 ? 'Critical Alert' : finalRisk >= 60 ? 'High Alert' : finalRisk >= 40 ? 'Moderate Risk' : 'Stable Flow';
 
     return {
       community: item.community,
       riskScore: finalRisk,
-      reportsTotal: item.reportsTotal || Math.round(finalRisk * 1.5),
+      reportsTotal: item.reportsTotal,
       resolvedPercent,
       tonnageCollected,
       responseAvgMinutes,
@@ -87,23 +86,20 @@ export default function AnalyticsView({
     };
   });
 
-  if (communityRankings.length === 0) {
-    communityRankings = [
-      { community: 'Winneba Central Market', riskScore: 91, reportsTotal: 142, resolvedPercent: 88, tonnageCollected: '18.4 T', responseAvgMinutes: 28, status: 'Critical Alert' },
-      { community: 'North Campus Link', riskScore: 85, reportsTotal: 96, resolvedPercent: 92, tonnageCollected: '11.2 T', responseAvgMinutes: 34, status: 'High Alert' },
-      { community: 'South Residential Ward', riskScore: 74, reportsTotal: 68, resolvedPercent: 95, tonnageCollected: '8.6 T', responseAvgMinutes: 41, status: 'Moderate Risk' },
-      { community: 'Lowtown Community', riskScore: 28, reportsTotal: 31, resolvedPercent: 100, tonnageCollected: '3.4 T', responseAvgMinutes: 22, status: 'Stable Flow' }
-    ];
-  } else {
-    communityRankings.sort((a, b) => b.riskScore - a.riskScore);
-  }
+  communityRankings.sort((a, b) => b.riskScore - a.riskScore);
 
   const totalReportsCount = incidents.length;
   const totalResolvedCount = incidents.filter(i => i.status === 'resolved' || i.rawStatus === 'RESOLVED' || i.rawStatus === 'CLOSED').length;
-  const resolutionRatePct = incidents.length > 0 ? ((totalResolvedCount / incidents.length) * 100).toFixed(1) : '100.0';
-  const totalRewardsKg = citizenRewards.reduce((a, b) => a + Number(b.refuse_kg_cleared || b.refuseKgCleared || 0), 0);
-  const totalTonnageCalculated = totalRewardsKg > 0 ? (totalRewardsKg / 1000).toFixed(1) : ((totalResolvedCount * 0.15 + 1.2)).toFixed(1);
-  const totalFlowRestored = (drainageSegments.reduce((a, b) => a + (Number(b.capacityM3S || b.flowCapacity || 0)), 0) || 38.2).toFixed(1);
+  const resolutionRatePct = incidents.length > 0 ? ((totalResolvedCount / incidents.length) * 100).toFixed(1) : '0.0';
+  const totalRewardsKg = citizenRewards.reduce((a, b) => a + Number(b.refuse_kg_cleared || b.refuseKgCleared || 0), 0) +
+    incidents.filter(i => i.status === 'resolved' || i.rawStatus === 'RESOLVED').reduce((sum, i) => {
+      const w = Number(i.weight_quantity || i.weightQuantity || (parseFloat(String(i.estimatedWasteVolume || '').replace(/[^\d.]/g, '')) || 0));
+      return sum + (isNaN(w) ? 0 : w);
+    }, 0);
+  const totalTonnageCalculated = (totalRewardsKg / 1000).toFixed(1);
+  const totalFlowRestored = (drainageSegments.reduce((a, b) => a + (Number(b.capacityM3S || b.flowCapacity || 0)), 0)).toFixed(1);
+  const estimatedCo2Avoided = (Number(totalTonnageCalculated) * 1.8).toFixed(1);
+  const estDamagesAvoidedGhs = (drainageSegments.filter(s => s.riskLevel === 'healthy' || s.status === 'Healthy').length * 250000 / 1000000).toFixed(2);
   const criticalDrainsCleaned = drainageSegments.filter(s => s.status === 'Cleaned' || s.status === 'Healthy' || s.riskLevel === 'healthy').length;
 
   return (
@@ -184,34 +180,33 @@ export default function AnalyticsView({
           <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Resolution Rate</span>
           <div className="text-[32px] font-bold text-primary mt-1">{resolutionRatePct}%</div>
           <span className="text-[12px] text-primary font-semibold flex items-center gap-1 mt-0.5">
-            <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
-            +6.2% vs Previous Period
+            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+            {totalResolvedCount} of {totalReportsCount} Incidents Resolved
           </span>
         </div>
 
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
-          <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Avg Incident Response</span>
-          <div className="text-[32px] font-bold text-on-surface mt-1">32 mins</div>
-          <span className="text-[12px] text-primary font-semibold flex items-center gap-1 mt-0.5">
-            <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
-            14 mins faster than baseline
+          <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Active Operations</span>
+          <div className="text-[32px] font-bold text-on-surface mt-1">{totalReportsCount - totalResolvedCount}</div>
+          <span className="text-[12px] text-on-surface-variant font-medium mt-0.5">
+            Unresolved Incidents in Queue
           </span>
         </div>
 
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
           <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Total Waste Diverted</span>
-          <div className="text-[32px] font-bold text-on-surface mt-1">{totalTonnageCalculated || '51.4'} Tons</div>
+          <div className="text-[32px] font-bold text-on-surface mt-1">{totalTonnageCalculated} Tons</div>
           <span className="text-[12px] text-on-surface-variant font-medium mt-0.5">
-            78% Recycled &amp; Upcycled
+            Verified Municipal Clearance
           </span>
         </div>
 
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
           <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Drainage Flow Monitored</span>
-          <div className="text-[32px] font-bold text-primary mt-1">{totalFlowRestored || '38.2'} m³/s</div>
+          <div className="text-[32px] font-bold text-primary mt-1">{totalFlowRestored} m³/s</div>
           <span className="text-[12px] text-primary font-semibold flex items-center gap-1 mt-0.5">
             <span className="material-symbols-outlined text-[14px]">verified</span>
-            {drainageSegments.length || 6} Monitored Segments
+            {drainageSegments.length} Monitored Segments
           </span>
         </div>
       </div>
@@ -224,8 +219,8 @@ export default function AnalyticsView({
           </div>
           <div>
             <span className="text-[11px] uppercase font-label-caps text-outline">Estimated CO₂ Avoided</span>
-            <div className="text-[22px] font-bold text-on-surface">32.8 MT CO₂e</div>
-            <p className="text-[12px] text-on-surface-variant">Via localized composting & plastic interception</p>
+            <div className="text-[22px] font-bold text-on-surface">{estimatedCo2Avoided} MT CO₂e</div>
+            <p className="text-[12px] text-on-surface-variant">Calculated from total verified waste diverted</p>
           </div>
         </div>
 
@@ -234,9 +229,9 @@ export default function AnalyticsView({
             <span className="material-symbols-outlined text-[26px]">water_damage</span>
           </div>
           <div>
-            <span className="text-[11px] uppercase font-label-caps text-outline">Property Damages Prevented</span>
-            <div className="text-[22px] font-bold text-on-surface">GH₵ 1.45M</div>
-            <p className="text-[12px] text-on-surface-variant">Estimated based on flood damage avoidance models</p>
+            <span className="text-[11px] uppercase font-label-caps text-outline">Damages Mitigated</span>
+            <div className="text-[22px] font-bold text-on-surface">GH₵ {estDamagesAvoidedGhs}M</div>
+            <p className="text-[12px] text-on-surface-variant">Estimated baseline from healthy drainage corridors</p>
           </div>
         </div>
 
@@ -245,9 +240,9 @@ export default function AnalyticsView({
             <span className="material-symbols-outlined text-[26px]">handshake</span>
           </div>
           <div>
-            <span className="text-[11px] uppercase font-label-caps text-outline">Citizen Participation</span>
+            <span className="text-[11px] uppercase font-label-caps text-outline">Citizen Reports Logged</span>
             <div className="text-[22px] font-bold text-on-surface">{totalReportsCount} Reports</div>
-            <p className="text-[12px] text-on-surface-variant">96% verified accuracy through GreenLens Mobile</p>
+            <p className="text-[12px] text-on-surface-variant">Live telemetry from citizen mobile uploads</p>
           </div>
         </div>
       </div>
@@ -264,7 +259,7 @@ export default function AnalyticsView({
             </p>
           </div>
           <span className="text-[11px] font-bold uppercase text-primary bg-primary/10 px-3 py-1 rounded-full font-data-mono">
-            5 Municipal Sectors
+            {Object.keys(sectorMap).length} Sectors
           </span>
         </div>
 
@@ -282,7 +277,8 @@ export default function AnalyticsView({
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/40 text-[13px]">
-              {communityRankings.map((comm, idx) => (
+              {communityRankings.length > 0 ? (
+                communityRankings.map((comm, idx) => (
                 <tr key={idx} className="hover:bg-surface-container-low/50 transition-colors">
                   <td className="py-3.5 px-5 font-bold text-on-surface">{comm.community}</td>
                   <td className="py-3.5 px-4 font-data-mono font-bold">
@@ -323,7 +319,14 @@ export default function AnalyticsView({
                     </span>
                   </td>
                 </tr>
-              ))}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="py-8 text-center text-outline text-[13px]">
+                    No sector ranking data logged yet. Monitored drainage corridors and community sectors will populate dynamically.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -130,9 +130,9 @@ export default function Header({
             title="Open-Meteo Rainfall & Hydrology Forecast"
           >
             <span className="material-symbols-outlined text-[#0284c7] text-[16px] sm:text-[17px] animate-pulse">cloud</span>
-            <span className="text-body-sm font-bold text-[12px] sm:text-[13px]">{weather?.temp || '28°C'}</span>
+            <span className="text-body-sm font-bold text-[12px] sm:text-[13px]">{weather?.temp || '--°C'}</span>
             <span className="text-[11px] font-bold hidden md:inline flex items-center gap-1">
-              <span>🌧️ {weather?.rain24hMm || '28.5'}mm</span>
+              <span>🌧️ {weather?.rain24hMm ?? 0}mm</span>
             </span>
           </button>
 
@@ -151,22 +151,22 @@ export default function Header({
                 <div className="p-3 rounded-2xl bg-primary-container/20 border border-primary/20 space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="text-on-surface-variant font-medium">Projected 24h Rainfall:</span>
-                    <span className="font-bold text-risk-critical font-data-mono">{weather?.rain24hMm || '28.5'} mm</span>
+                    <span className="font-bold text-risk-critical font-data-mono">{weather?.rain24hMm ?? 0} mm</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-on-surface-variant font-medium">Precipitation Probability:</span>
-                    <span className="font-bold text-primary font-data-mono">{weather?.rainProbability || '85%'}</span>
+                    <span className="font-bold text-primary font-data-mono">{weather?.rainProbability || '0%'}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-on-surface-variant font-medium">Current Wind &amp; Humidity:</span>
-                    <span className="font-semibold text-on-surface">{weather?.wind || '18 km/h'} • {weather?.humidity || '76%'}</span>
+                    <span className="font-semibold text-on-surface">{weather?.wind || '--'} • {weather?.humidity || '--'}</span>
                   </div>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/50">
                   <span className="text-[10px] uppercase font-bold text-outline block mb-1">Hydrological Impact Advisory:</span>
                   <p className="text-[11px] text-on-surface-variant leading-relaxed">
-                    {weather?.warning || 'Convective storm front detected. High surcharge risk on partially silted culverts.'}
+                    {weather?.warning || 'Live weather telemetry synchronizing with Open-Meteo.'}
                   </p>
                 </div>
               </div>

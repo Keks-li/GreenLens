@@ -36,11 +36,11 @@ export default function FloodRiskView({
   const topRiskDrains = compoundAnalysis.topRiskDrains || [];
 
   // Rainfall stats from Open-Meteo
-  const rain24h = meteoData?.forecast?.rain24hMm || 28.5;
-  const rain48h = meteoData?.forecast?.rain48hMm || 64.0;
-  const currentTemp = meteoData?.current?.temp || '28°C';
-  const currentCondition = meteoData?.current?.condition || 'Scattered Clouds';
-  const rainProb = meteoData?.forecast?.maxProb24h || '95%';
+  const rain24h = Number(meteoData?.forecast?.rain24hMm ?? 0);
+  const rain48h = Number(meteoData?.forecast?.rain48hMm ?? 0);
+  const currentTemp = meteoData?.current?.temp || '--°C';
+  const currentCondition = meteoData?.current?.condition || 'Telemetry Inactive';
+  const rainProb = meteoData?.forecast?.maxProb24h || '0%';
 
   // Horizon multiplier
   const horizonRainfall = forecastHorizon === '6H' ? Math.round(rain24h * 0.3)
@@ -48,8 +48,8 @@ export default function FloodRiskView({
     : forecastHorizon === '24H' ? rain24h
     : rain48h;
 
-  const hourlyRain = meteoData?.forecast?.hourlyRain || [0, 0, 0, 0.4, 1.2, 3.5, 7.8, 6.2, 4.1, 1.8, 0.8, 0];
-  const maxHourlyVal = Math.max(...hourlyRain, 5);
+  const hourlyRain = meteoData?.forecast?.hourlyRain || Array(12).fill(0);
+  const maxHourlyVal = Math.max(...hourlyRain, 1);
 
   return (
     <div className="flex flex-col w-full select-none">
@@ -277,7 +277,7 @@ export default function FloodRiskView({
                             drainId: selectedLocationInfo.nearestDrain?.id,
                             drainName: selectedLocationInfo.nearestDrain?.name || selectedLocationInfo.sector,
                             location: `GIS: ${selectedLocationInfo.lat}, ${selectedLocationInfo.lng}`,
-                            riskScore: selectedLocationInfo.nearestDrain?.riskScore || 85
+                            riskScore: selectedLocationInfo.nearestDrain?.riskScore ?? 0
                           });
                         }
                       }}
