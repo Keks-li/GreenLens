@@ -145,6 +145,7 @@ export default function DashboardView({
           <LiveTelemetryMap
             drainageSegments={drainageSegments}
             incidents={incidents}
+            selectedMunicipality={selectedMunicipality}
             focusedLocation={focusedLocation}
             onSelectSegment={onSelectSegment}
             onSelectIncident={onSelectIncident}

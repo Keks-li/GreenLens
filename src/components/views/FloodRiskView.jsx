@@ -5,6 +5,7 @@ import { fetchOpenMeteoForecast, calculateCompoundFloodPredictions } from '../..
 export default function FloodRiskView({
   drainageSegments = [],
   incidents = [],
+  selectedMunicipality = null,
   onInspectInfrastructure,
   onOpenDispatch,
   onSelectSegment
@@ -138,7 +139,7 @@ export default function FloodRiskView({
               <div className="flex justify-between items-center text-[11px] font-data-mono text-outline">
                 <span>Peak Intensity: {Math.max(...hourlyRain)} mm/hr</span>
                 <span>Horizon Volume: {horizonRainfall} mm</span>
-                <span>Winneba Catchment: -0.62566, 5.34352</span>
+                <span>{selectedMunicipality?.name || 'Winneba'} Catchment: {Number(selectedMunicipality?.lat || 5.34352).toFixed(4)}, {Number(selectedMunicipality?.lng || -0.62566).toFixed(4)}</span>
               </div>
 
               {/* Bar Graph */}
@@ -183,19 +184,22 @@ export default function FloodRiskView({
               <div>
                 <h3 className="font-title-md font-bold text-on-surface text-[17px] flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-[20px]">map</span>
-                  Winneba Flood Risk GIS Map (OpenStreetMap)
+                  {selectedMunicipality?.name || 'Winneba'} Flood Risk GIS Map (OpenStreetMap)
                 </h3>
                 <p className="text-[12px] text-on-surface-variant">
                   Spatial visualization of high-surcharge drainage corridors and simulated flood inundation polygons.
                 </p>
               </div>
-              <span className="text-[11px] font-data-mono text-primary font-bold">5.34352, -0.62566</span>
+              <span className="text-[11px] font-data-mono text-primary font-bold">
+                {Number(selectedMunicipality?.lat || 5.34352).toFixed(5)}, {Number(selectedMunicipality?.lng || -0.62566).toFixed(5)}
+              </span>
             </div>
 
             <div className="h-[430px] w-full rounded-xl overflow-hidden border border-outline-variant/60 relative">
               <OpenStreetMapViewer
                 drainageSegments={drainageSegments}
                 incidents={incidents}
+                selectedMunicipality={selectedMunicipality}
                 selectedSegmentId={selectedDrainId}
                 onSelectSegment={(seg) => {
                   setSelectedDrainId(seg.id);

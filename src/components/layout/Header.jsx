@@ -5,6 +5,7 @@ export default function Header({
   municipalities = [],
   selectedMunicipalityId,
   onSelectMunicipality,
+  canSwitchMunicipality = false,
   searchQuery,
   setSearchQuery,
   weatherData,
@@ -70,20 +71,42 @@ export default function Header({
           <span className="material-symbols-outlined text-[24px]">menu</span>
         </button>
 
-        {/* Municipality Selector */}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-on-surface-variant text-body-sm bg-surface-container-low px-3 py-1.5 rounded-full border border-outline-variant/70 shadow-2xs shrink-0">
+        {/* Municipality Selector (Interactive for Super Admin, Locked for other roles) */}
+        <div
+          className={`flex items-center gap-1.5 sm:gap-2 text-on-surface-variant text-body-sm bg-surface-container-low px-3 py-1.5 rounded-full border shadow-2xs shrink-0 ${
+            canSwitchMunicipality ? 'border-primary/40 hover:border-primary transition-colors' : 'border-outline-variant/70'
+          }`}
+          title={
+            canSwitchMunicipality
+              ? 'Super Admin: Switch active municipality jurisdiction'
+              : 'Assigned municipality jurisdiction'
+          }
+        >
           <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-primary">location_on</span>
-          <select
-            value={selectedMunicipalityId}
-            onChange={(e) => onSelectMunicipality(e.target.value)}
-            className="bg-transparent font-bold text-on-surface focus:outline-none cursor-pointer text-[12px] sm:text-[13px] max-w-[120px] sm:max-w-none truncate"
-          >
-            {munisList.map((mun) => (
-              <option key={mun.id} value={mun.id}>
-                {mun.name}
-              </option>
-            ))}
-          </select>
+          {canSwitchMunicipality ? (
+            <select
+              value={String(selectedMunicipalityId ?? '')}
+              onChange={(e) => onSelectMunicipality(e.target.value)}
+              className="bg-transparent font-bold text-on-surface focus:outline-none cursor-pointer text-[12px] sm:text-[13px] max-w-[140px] sm:max-w-[220px] truncate"
+            >
+              {munisList.map((mun) => (
+                <option key={String(mun.id)} value={String(mun.id)}>
+                  {mun.name}{mun.region ? ` (${mun.region})` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-on-surface text-[12px] sm:text-[13px] max-w-[140px] sm:max-w-[220px] truncate">
+                {munisList.find((m) => String(m.id) === String(selectedMunicipalityId))?.name ||
+                  munisList[0]?.name ||
+                  'Winneba Municipal Assembly'}
+              </span>
+              <span className="material-symbols-outlined text-[13px] text-outline" title="Locked to assigned municipality">
+                lock
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Breadcrumbs - Only show on large viewports to prevent collision with search */}

@@ -18,37 +18,84 @@ export const supabase = isSupabaseConfigured
 // Helpers to transform database records into frontend-friendly objects (supporting both camelCase & snake_case)
 const mapDrainageSegment = (row) => {
   if (!row) return null;
+
+  const rawRisk = String(row.risk_level || row.riskLevel || 'LOW').toUpperCase();
+  const normalizedRiskLevel =
+    rawRisk === 'CRITICAL' ? 'critical' :
+    rawRisk === 'HIGH' ? 'high' :
+    rawRisk === 'MODERATE' ? 'moderate' : 'healthy';
+
+  const rawStatus = String(row.status || 'OPERATIONAL').toUpperCase();
+  const derivedBlockage =
+    rawStatus === 'BLOCKED' ? 85 :
+    rawStatus === 'PARTIALLY_BLOCKED' ? 50 :
+    rawRisk === 'CRITICAL' ? 80 :
+    rawRisk === 'HIGH' ? 65 :
+    rawRisk === 'MODERATE' ? 35 : 10;
+
+  const derivedRiskScore =
+    rawRisk === 'CRITICAL' ? 88 :
+    rawRisk === 'HIGH' ? 72 :
+    rawRisk === 'MODERATE' ? 45 : 18;
+
+  const capacityNum = Number(row.capacity_m3_s ?? row.capacity ?? 0);
+  const blockageNum = Number(row.blockage_percent ?? row.blockagePercent ?? derivedBlockage);
+  const currentFlowNum = Number(
+    row.current_flow_m3_s ?? Math.max(0, capacityNum * (1 - blockageNum / 100))
+  );
+
+  const formatDrainType = (t) => {
+    if (!t) return 'Open Channel';
+    return String(t)
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  const formatStatus = (s) => {
+    if (!s) return 'Operational';
+    return String(s)
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  const muniObj = row.municipalities;
+  const fallbackLat = Number(muniObj?.latitude ?? 5.3556);
+  const fallbackLng = Number(muniObj?.longitude ?? -0.6247);
+
   return {
     ...row,
-    id: row.id,
-    name: row.name,
-    sector: row.sector,
-    municipality: row.municipality_id || row.municipality || 'winneba',
-    municipalityId: row.municipality_id || row.municipality || 'winneba',
-    type: row.drain_type || row.type || 'Open Trapezoidal Channel',
-    drainType: row.drain_type || row.type || 'Open Trapezoidal Channel',
-    capacity: row.capacity || `${row.capacity_m3_s || 0.0} m³/s`,
-    capacityM3S: Number(row.capacity_m3_s || 0.0),
-    currentFlow: row.current_flow || `${row.current_flow_m3_s || 0.0} m³/s`,
-    currentFlowM3S: Number(row.current_flow_m3_s || 0.0),
-    blockagePercent: Number(row.blockage_percent ?? row.blockagePercent ?? 0),
-    riskScore: Number(row.risk_score ?? row.riskScore ?? 0),
-    riskLevel: row.risk_level || row.riskLevel || 'healthy',
-    lastInspected: row.last_inspected || row.lastInspected || new Date().toISOString().split('T')[0],
-    lastCleaned: row.last_cleaned || row.lastCleaned || new Date().toISOString().split('T')[0],
+    id: String(row.segment_code || `DRN-${row.id}`),
+    rawId: row.id,
+    name: row.name || `Drainage Segment #${row.id}`,
+    sector: row.sector || muniObj?.name || 'Municipal Basin',
+    municipality: String(row.municipality_id || row.municipality || 'winneba'),
+    municipalityId: String(row.municipality_id || row.municipality || 'winneba'),
+    type: formatDrainType(row.drain_type || row.type),
+    drainType: formatDrainType(row.drain_type || row.type),
+    capacity: `${capacityNum.toFixed(1)} m³/s`,
+    capacityM3S: capacityNum,
+    currentFlow: `${currentFlowNum.toFixed(1)} m³/s`,
+    currentFlowM3S: currentFlowNum,
+    blockagePercent: blockageNum,
+    riskScore: Number(row.risk_score ?? row.riskScore ?? derivedRiskScore),
+    riskLevel: normalizedRiskLevel,
+    lastInspected: row.last_inspected || row.lastInspected || (row.updated_at ? String(row.updated_at).split('T')[0] : new Date().toISOString().split('T')[0]),
+    lastCleaned: row.last_cleaned || row.lastCleaned || (row.created_at ? String(row.created_at).split('T')[0] : new Date().toISOString().split('T')[0]),
     coordinates: {
       x: Number(row.coord_x ?? (row.coordinates?.x ?? 50)),
       y: Number(row.coord_y ?? (row.coordinates?.y ?? 50)),
-      lat: Number(row.latitude ?? (row.coordinates?.lat ?? 5.3556)),
-      lng: Number(row.longitude ?? (row.coordinates?.lng ?? -0.6247))
+      lat: Number(row.latitude ?? (row.coordinates?.lat ?? fallbackLat)),
+      lng: Number(row.longitude ?? (row.coordinates?.lng ?? fallbackLng))
     },
     imageUrl: row.image_url || row.imageUrl || 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=800&q=80',
-    thermalScanStatus: row.thermal_scan_status || row.thermalScanStatus || 'Flow clear',
+    thermalScanStatus: row.thermal_scan_status || row.thermalScanStatus || (row.condition ? `Condition: ${row.condition}` : 'Flow clear'),
     populationAtRisk: row.population_at_risk || row.populationAtRisk || 'N/A',
     criticalInfrastructure: row.critical_infrastructure || row.criticalInfrastructure || 'N/A',
     historicalFlooding: row.historical_flooding || row.historicalFlooding || 'None recorded',
     aiDirective: row.ai_directive || row.aiDirective || 'Normal monitoring',
-    status: row.status || 'Healthy',
+    status: formatStatus(row.status),
     assignedTeamId: row.assigned_team_id || row.assignedTeamId || null
   };
 };
@@ -287,7 +334,8 @@ export const dataService = {
         const { data, error } = await supabase.from('municipalities').select('*').order('name');
         if (!error && data?.length) {
           return data.map(m => ({
-            id: m.id,
+            id: String(m.id),
+            rawId: m.id,
             name: m.name,
             region: m.region,
             lat: Number(m.latitude),
@@ -381,17 +429,22 @@ export const dataService = {
     };
   },
 
-  // Fetch all drainage segments
+  // Fetch all drainage segments for the selected municipality
   async getDrainageSegments(municipalityId = 'winneba') {
     if (isSupabaseConfigured && supabase) {
       try {
-        let query = supabase.from('drainage_segments').select('*');
+        let query = supabase
+          .from('drainage_segments')
+          .select('*, municipalities ( name, latitude, longitude )');
         if (municipalityId && municipalityId !== 'all') {
           query = query.eq('municipality_id', municipalityId);
         }
-        const { data, error } = await query.order('risk_score', { ascending: false });
+        const { data, error } = await query.order('id', { ascending: true }).limit(200);
         if (!error && data?.length) {
-          return data.map(mapDrainageSegment);
+          return data.map(mapDrainageSegment).filter(Boolean);
+        }
+        if (error) {
+          console.error('Supabase getDrainageSegments query error:', error.message);
         }
       } catch (err) {
         console.error('Supabase getDrainageSegments error:', err);

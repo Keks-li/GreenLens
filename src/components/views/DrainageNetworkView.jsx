@@ -28,13 +28,28 @@ export default function DrainageNetworkView({
   };
 
   const filteredSegments = segments.filter((seg) => {
-    if (searchQuery && !seg.name.toLowerCase().includes(searchQuery.toLowerCase()) && !seg.id.toLowerCase().includes(searchQuery.toLowerCase()) && !seg.sector.toLowerCase().includes(searchQuery.toLowerCase())) {
+    const q = searchQuery.trim().toLowerCase();
+    if (
+      q &&
+      !(seg.name || '').toLowerCase().includes(q) &&
+      !String(seg.id || '').toLowerCase().includes(q) &&
+      !(seg.sector || '').toLowerCase().includes(q)
+    ) {
       return false;
     }
     if (filterRisk !== 'all' && seg.riskLevel !== filterRisk) return false;
-    if (filterType !== 'all' && !seg.type.toLowerCase().includes(filterType.toLowerCase())) return false;
+    if (filterType !== 'all' && !(seg.type || '').toLowerCase().includes(filterType.toLowerCase())) return false;
     return true;
   });
+
+  const totalPeakCapacity = segments.reduce((sum, s) => sum + (Number(s.capacityM3S) || 0), 0);
+  const operationalPercent =
+    segments.length > 0
+      ? Math.round(
+          (segments.filter((s) => String(s.status || '').toLowerCase() === 'operational').length / segments.length) *
+            100
+        )
+      : 0;
 
   const handleLogDefect = async (e) => {
     e.preventDefault();
@@ -107,7 +122,7 @@ export default function DrainageNetworkView({
 
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
           <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Peak Flow Capacity</span>
-          <div className="text-[28px] font-bold text-on-surface mt-1">90.7 m³/s</div>
+          <div className="text-[28px] font-bold text-on-surface mt-1">{totalPeakCapacity.toFixed(1)} m³/s</div>
           <span className="text-[12px] text-secondary font-semibold flex items-center gap-1 mt-0.5">
             <span className="material-symbols-outlined text-[16px]">water_drop</span>
             Aggregate Network Peak
@@ -115,8 +130,8 @@ export default function DrainageNetworkView({
         </div>
 
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/60 shadow-xs">
-          <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Inspected Past 7 Days</span>
-          <div className="text-[28px] font-bold text-on-surface mt-1">100%</div>
+          <span className="text-[11px] font-bold uppercase font-label-caps text-outline">Operational Channels</span>
+          <div className="text-[28px] font-bold text-on-surface mt-1">{operationalPercent}%</div>
           <span className="text-[12px] text-primary font-semibold flex items-center gap-1 mt-0.5">
             <span className="material-symbols-outlined text-[16px]">verified</span>
             Drone LIDAR + Thermal

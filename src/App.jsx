@@ -23,15 +23,107 @@ import IncidentDetailModal from './components/modals/IncidentDetailModal';
 import CreateFieldTeamModal from './components/modals/CreateFieldTeamModal';
 import HelpModal from './components/modals/HelpModal';
 
-import { dataService, isSupabaseConfigured } from './lib/supabase';
+import { supabase, dataService, isSupabaseConfigured } from './lib/supabase';
 import { isViewAllowed, getPermissionsForRole } from './lib/rbac';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
 
   const [currentView, setCurrentView] = useState('dashboard');
-  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState('winneba');
+  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(
+    () => (typeof window !== 'undefined' && localStorage.getItem('greenlens_selected_muni')) || 'winneba'
+  );
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Restore persisted Supabase Auth session on page refresh
+  useEffect(() => {
+    let mounted = true;
+
+    const restoreSession = async () => {
+      if (!isSupabaseConfigured || !supabase) {
+        if (mounted) setIsRestoringSession(false);
+        return;
+      }
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && mounted) {
+          const authUser = session.user;
+          let restoredUser = null;
+
+          // Prefer cached user profile if it matches the active Supabase session user
+          try {
+            const cached = localStorage.getItem('greenlens_admin_user');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (parsed?.id === authUser.id) {
+                restoredUser = parsed;
+              }
+            }
+          } catch {}
+
+          if (!restoredUser) {
+            let role = authUser.user_metadata?.role || 'Municipal Officer';
+            try {
+              const { data: roleRow } = await supabase
+                .from('user_roles')
+                .select('roles(name)')
+                .eq('user_id', authUser.id)
+                .maybeSingle();
+              const dbRole = roleRow?.roles?.name;
+              if (dbRole === 'SUPER_ADMIN') role = 'Super Administrator';
+              else if (dbRole === 'MUNICIPAL_ADMIN') role = 'System Administrator';
+              else if (dbRole === 'ENVIRONMENTAL_OFFICER' || dbRole === 'DRAINAGE_OFFICER') role = 'Municipal Officer';
+              else if (dbRole === 'FIELD_MANAGER' || dbRole === 'SUPERVISOR') role = 'Field Supervisor';
+            } catch {}
+
+            restoredUser = {
+              id: authUser.id,
+              name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Administrator',
+              email: authUser.email,
+              role,
+              dept: authUser.user_metadata?.department || 'Operations Command',
+              municipalityId: authUser.user_metadata?.municipalityId || 'winneba'
+            };
+            try {
+              localStorage.setItem('greenlens_admin_user', JSON.stringify(restoredUser));
+            } catch {}
+          }
+
+          setCurrentUser(restoredUser);
+          const savedMuni = localStorage.getItem('greenlens_selected_muni');
+          if (savedMuni) {
+            setSelectedMunicipalityId(savedMuni);
+          } else if (restoredUser.municipalityId) {
+            setSelectedMunicipalityId(String(restoredUser.municipalityId));
+          }
+        }
+      } catch (err) {
+        console.warn('Session restore error:', err);
+      } finally {
+        if (mounted) setIsRestoringSession(false);
+      }
+    };
+
+    restoreSession();
+
+    const { data: { subscription } } = supabase
+      ? supabase.auth.onAuthStateChange((event) => {
+          if (event === 'SIGNED_OUT' && mounted) {
+            setCurrentUser(null);
+            try {
+              localStorage.removeItem('greenlens_admin_user');
+            } catch {}
+          }
+        })
+      : { data: { subscription: null } };
+
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe?.();
+    };
+  }, []);
 
   // Live Database State
   const [municipalitiesList, setMunicipalitiesList] = useState([]);
@@ -216,7 +308,18 @@ export default function App() {
         dataService.getBadges()
       ]);
 
-      if (munisRes?.length) setMunicipalitiesList(munisRes);
+      if (munisRes?.length) {
+        setMunicipalitiesList(munisRes);
+        const hasMatch = munisRes.some((m) => String(m.id) === String(muniId));
+        if (!hasMatch) {
+          const preferred =
+            munisRes.find((m) => m.name?.toLowerCase().includes('winneba') || m.name?.toLowerCase().includes('effutu')) ||
+            munisRes[0];
+          if (preferred) {
+            setSelectedMunicipalityId(String(preferred.id));
+          }
+        }
+      }
       const liveIncidents = incRes || [];
       if (incRes) setIncidents(liveIncidents);
       if (kpiRes) {
@@ -253,8 +356,9 @@ export default function App() {
   }, [selectedMunicipalityId]);
 
   useEffect(() => {
+    if (!currentUser) return;
     loadData(selectedMunicipalityId);
-  }, [selectedMunicipalityId, loadData]);
+  }, [currentUser, selectedMunicipalityId, loadData]);
 
   // Real-time listener for incoming citizen uploads and reports
   useEffect(() => {
@@ -281,7 +385,7 @@ export default function App() {
   }, []);
 
   const selectedMunicipality =
-    municipalitiesList.find((m) => m.id === selectedMunicipalityId) ||
+    municipalitiesList.find((m) => String(m.id) === String(selectedMunicipalityId)) ||
     municipalitiesList[0] || {
       id: 'winneba',
       name: 'Winneba Municipal Assembly',
@@ -415,13 +519,29 @@ export default function App() {
     }
   }, [currentUser, currentView, permissions.allowedViews]);
 
+  if (isRestoringSession) {
+    return (
+      <div className="bg-background min-h-screen flex flex-col items-center justify-center gap-3 text-on-surface">
+        <span className="material-symbols-outlined text-primary text-4xl animate-spin">progress_activity</span>
+        <p className="text-sm font-semibold text-on-surface-variant">Restoring Command Session...</p>
+      </div>
+    );
+  }
+
   if (!currentUser) {
     return (
       <LoginView
         onLoginSuccess={(user) => {
           setCurrentUser(user);
+          try {
+            localStorage.setItem('greenlens_admin_user', JSON.stringify(user));
+          } catch {}
           if (user.municipalityId) {
-            setSelectedMunicipalityId(user.municipalityId);
+            const muni = String(user.municipalityId);
+            setSelectedMunicipalityId(muni);
+            try {
+              localStorage.setItem('greenlens_selected_muni', muni);
+            } catch {}
           }
           const perms = getPermissionsForRole(user.role);
           setCurrentView(perms.allowedViews[0] || 'dashboard');
@@ -455,7 +575,12 @@ export default function App() {
         incidentsCount={incidents.filter(i => i.status !== 'resolved').length || incidents.length}
         aiPriorityCount={priorityActions.length}
         alertsCount={alerts.length}
-        onLogout={() => {
+        onLogout={async () => {
+          try {
+            localStorage.removeItem('greenlens_admin_user');
+            localStorage.removeItem('greenlens_selected_muni');
+            if (supabase) await supabase.auth.signOut();
+          } catch {}
           setCurrentUser(null);
           showToast('Logged out of Command Session.');
         }}
@@ -468,7 +593,19 @@ export default function App() {
           currentView={currentView}
           municipalities={municipalitiesList}
           selectedMunicipalityId={selectedMunicipalityId}
-          onSelectMunicipality={(id) => setSelectedMunicipalityId(id)}
+          canSwitchMunicipality={Boolean(permissions.canSwitchMunicipality)}
+          onSelectMunicipality={(id) => {
+            if (!permissions.canSwitchMunicipality) return;
+            const strId = String(id);
+            setSelectedMunicipalityId(strId);
+            try {
+              localStorage.setItem('greenlens_selected_muni', strId);
+            } catch {}
+            const target = municipalitiesList.find((m) => String(m.id) === strId);
+            if (target?.name) {
+              showToast(`Switched jurisdiction to ${target.name}`);
+            }
+          }}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           weatherData={weather}
@@ -573,6 +710,7 @@ export default function App() {
           {currentView === 'digital-twin' && (
             <DigitalTwinView
               drainageSegments={drainageSegments}
+              selectedMunicipality={selectedMunicipality}
               onSelectSegment={handleSelectSegment}
               onOpenDispatch={handleOpenDispatch}
               onUpdateSegment={handleUpdateSegment}
@@ -592,6 +730,7 @@ export default function App() {
             <FloodRiskView
               drainageSegments={drainageSegments}
               incidents={incidents}
+              selectedMunicipality={selectedMunicipality}
               onInspectInfrastructure={(segment) => {
                 const target = typeof segment === 'object' ? segment : drainageSegments.find((d) => d.id === segment || d.name === segment) || drainageSegments[0];
                 setSelectedSegment(target);

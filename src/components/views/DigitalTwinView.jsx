@@ -3,6 +3,7 @@ import OpenStreetMapViewer from '../map/OpenStreetMapViewer';
 
 export default function DigitalTwinView({
   drainageSegments = [],
+  selectedMunicipality = null,
   onSelectSegment,
   onOpenDispatch
 }) {
@@ -63,6 +64,7 @@ export default function DigitalTwinView({
       <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
         <OpenStreetMapViewer
           drainageSegments={drainageSegments}
+          selectedMunicipality={selectedMunicipality}
           selectedSegmentId={selectedNodeId}
           onSelectSegment={handleSelectNode}
           className="w-full h-full"

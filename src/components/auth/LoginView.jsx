@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured, dataService } from '../../lib/supabase';
-import { seededAdminAccounts } from '../../data/mockData';
 
 export default function LoginView({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -16,133 +15,89 @@ export default function LoginView({ onLoginSuccess }) {
 
     const cleanEmail = (email || '').trim().toLowerCase();
 
+    if (!cleanEmail || !password) {
+      setErrorMessage('Please enter both your email and password.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMessage('Supabase backend is not configured. Please check environment variables.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // 1. Authenticate via deployed Supabase Edge Function
-      if (isSupabaseConfigured) {
-        try {
-          const edgeRes = await dataService.loginViaEdgeFunction(cleanEmail, password);
-          if (edgeRes?.success && edgeRes.user) {
-            onLoginSuccess(edgeRes.user);
-            setIsLoading(false);
-            return;
-          }
-          // If Edge Function returned an invalid credentials error for a non-demo user, surface it
-          if (
-            edgeRes?.error &&
-            !cleanEmail.includes('admin@') &&
-            !seededAdminAccounts.some((a) => a.email.toLowerCase() === cleanEmail)
-          ) {
-            setErrorMessage(edgeRes.error);
-            setIsLoading(false);
-            return;
-          }
-        } catch (edgeErr) {
-          console.warn('Edge Function auth attempt:', edgeErr);
-        }
-      }
-
-      // 2. Direct Supabase Auth fallback
-      if (isSupabaseConfigured && supabase) {
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: cleanEmail,
-            password
+      // 1. Authenticate via deployed Supabase Edge Function (verifies Auth + RBAC role)
+      const edgeRes = await dataService.loginViaEdgeFunction(cleanEmail, password);
+      if (edgeRes?.success && edgeRes.user) {
+        // Hydrate the browser Supabase client session so RLS queries run as `authenticated`
+        if (edgeRes.session?.access_token && edgeRes.session?.refresh_token) {
+          await supabase.auth.setSession({
+            access_token: edgeRes.session.access_token,
+            refresh_token: edgeRes.session.refresh_token,
           });
-          if (!error && data?.user) {
-            onLoginSuccess({
-              id: data.user.id,
-              name: data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
-              email: cleanEmail,
-              role: data.user.user_metadata?.role || 'System Administrator',
-              dept: data.user.user_metadata?.department || 'Executive Command',
-              municipalityId: data.user.user_metadata?.municipalityId || 'winneba'
-            });
-            setIsLoading(false);
-            return;
-          }
-        } catch (supabaseErr) {
-          console.warn('Supabase auth attempt:', supabaseErr);
         }
-      }
-
-      // Small transition delay for smooth UX
-      await new Promise((resolve) => setTimeout(resolve, 350));
-
-      // 2. Fetch users list (seeded admins + admin-created users)
-      const allUsers = await dataService.getUsers();
-
-      // Check for matching user in registered system users
-      const matchedUser = allUsers.find(
-        (u) => u.email && u.email.toLowerCase() === cleanEmail
-      );
-
-      if (matchedUser) {
-        onLoginSuccess({
-          id: matchedUser.id,
-          name: matchedUser.name,
-          email: matchedUser.email,
-          role: matchedUser.role || 'Municipal Officer',
-          dept: matchedUser.department || 'Operations Command',
-          municipalityId: matchedUser.municipalityId || 'winneba'
-        });
+        onLoginSuccess(edgeRes.user);
+        setIsLoading(false);
         return;
       }
 
-      // Check against seeded admin accounts
-      const seededAdmin = seededAdminAccounts.find(
-        (a) => a.email.toLowerCase() === cleanEmail
-      );
-
-      if (seededAdmin) {
-        onLoginSuccess({
-          id: seededAdmin.id,
-          name: seededAdmin.name,
-          email: seededAdmin.email,
-          role: seededAdmin.role,
-          dept: seededAdmin.department,
-          municipalityId: seededAdmin.municipalityId
-        });
+      // If Edge Function explicitly rejected credentials, stop here (no passwordless fallback)
+      if (edgeRes?.error) {
+        setErrorMessage(edgeRes.error);
+        setIsLoading(false);
         return;
       }
 
-      // Fallback for default admin keyword if email contains 'admin'
-      if (cleanEmail === 'admin@greenlens.app' || cleanEmail.includes('admin@')) {
+      // 2. Direct Supabase Auth fallback (only if Edge Function was unreachable)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password
+      });
+
+      if (!error && data?.user) {
         onLoginSuccess({
-          id: 'admin-root',
-          name: 'System Administrator',
+          id: data.user.id,
+          name: data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
           email: cleanEmail,
-          role: 'System Administrator',
-          dept: 'Executive Command & IT Governance',
-          municipalityId: 'winneba'
+          role: data.user.user_metadata?.role || 'Municipal Officer',
+          dept: data.user.user_metadata?.department || 'Operations Command',
+          municipalityId: data.user.user_metadata?.municipalityId || 'winneba'
         });
+        setIsLoading(false);
         return;
       }
 
-      // If no valid provisioned account is found
-      setErrorMessage(
-        'Account not recognized. Access is restricted to provisioned roles. Please contact a System Administrator.'
-      );
+      setErrorMessage(error?.message || 'Invalid email or password. Please verify your credentials.');
     } catch (err) {
-      setErrorMessage('Authentication error. Please verify your credentials.');
+      setErrorMessage('Authentication error. Please verify your credentials and network connection.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider) => {
+  const handleSocialLogin = async (provider) => {
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMessage('Supabase backend is not configured.');
+      return;
+    }
     setIsLoading(true);
-    setTimeout(() => {
-      // Authenticate as System Administrator
-      onLoginSuccess({
-        id: `admin-${provider.toLowerCase()}`,
-        name: `Administrator (${provider})`,
-        email: `admin@greenlens.app`,
-        role: 'System Administrator',
-        dept: 'Executive Command & IT Governance',
-        municipalityId: 'winneba'
+    setErrorMessage('');
+    try {
+      const oauthProvider = provider.toLowerCase();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: oauthProvider,
+        options: { redirectTo: window.location.origin }
       });
+      if (error) {
+        setErrorMessage(error.message || `${provider} sign-in is not enabled.`);
+      }
+    } catch (err) {
+      setErrorMessage(`Failed to start ${provider} sign-in.`);
+    } finally {
       setIsLoading(false);
-    }, 400);
+    }
   };
 
   return (

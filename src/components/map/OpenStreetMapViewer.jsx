@@ -47,6 +47,7 @@ const TILE_PROVIDERS = {
 export default function OpenStreetMapViewer({
   drainageSegments = [],
   incidents = [],
+  selectedMunicipality = null,
   selectedSegmentId = null,
   selectedIncidentId = null,
   focusedLocation = null,
@@ -60,6 +61,18 @@ export default function OpenStreetMapViewer({
   interactive = true,
   viewMode = 'telemetry' // 'telemetry', 'digital-twin', 'flood-risk'
 }) {
+  const hasValidMuniCoords =
+    selectedMunicipality &&
+    Number.isFinite(Number(selectedMunicipality.lat)) &&
+    Number.isFinite(Number(selectedMunicipality.lng)) &&
+    (Number(selectedMunicipality.lat) !== 0 || Number(selectedMunicipality.lng) !== 0);
+
+  const activeCenter = hasValidMuniCoords
+    ? [Number(selectedMunicipality.lat), Number(selectedMunicipality.lng)]
+    : WINNEBA_CENTER;
+  const activeZoom = Number(selectedMunicipality?.zoom) || 13;
+  const activeMuniName = selectedMunicipality?.name || 'Winneba';
+  const formattedCoords = `${Math.abs(activeCenter[0]).toFixed(4)}° ${activeCenter[0] >= 0 ? 'N' : 'S'}, ${Math.abs(activeCenter[1]).toFixed(4)}° ${activeCenter[1] >= 0 ? 'E' : 'W'}`;
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const tileLayerRef = useRef(null);
@@ -132,8 +145,8 @@ export default function OpenStreetMapViewer({
     if (mapInstanceRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: WINNEBA_CENTER,
-      zoom: DEFAULT_ZOOM,
+      center: activeCenter,
+      zoom: activeZoom,
       zoomControl: false,
       attributionControl: true
     });
@@ -666,9 +679,19 @@ export default function OpenStreetMapViewer({
     }
   }, [focusedLocation]);
 
+  // Smoothly pan/fly map whenever the selected municipality changes
+  useEffect(() => {
+    if (!mapInstanceRef.current || !hasValidMuniCoords) return;
+    mapInstanceRef.current.flyTo(
+      [Number(selectedMunicipality.lat), Number(selectedMunicipality.lng)],
+      Number(selectedMunicipality.zoom) || 13,
+      { duration: 1.2 }
+    );
+  }, [selectedMunicipality?.id, selectedMunicipality?.lat, selectedMunicipality?.lng]);
+
   const handleRecenter = () => {
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo(WINNEBA_CENTER, DEFAULT_ZOOM, { duration: 1.0 });
+      mapInstanceRef.current.flyTo(activeCenter, activeZoom, { duration: 1.0 });
     }
   };
 
@@ -690,11 +713,11 @@ export default function OpenStreetMapViewer({
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
           <span className="font-label-caps text-[11px] font-bold text-on-surface uppercase">
-            OpenStreetMap • Winneba GIS
+            OpenStreetMap • {activeMuniName} GIS
           </span>
         </div>
         <span className="text-[11px] font-data-mono text-outline bg-surface-container px-2 py-0.5 rounded">
-          5.3435° N, 0.6257° W
+          {formattedCoords}
         </span>
       </div>
 
@@ -789,7 +812,7 @@ export default function OpenStreetMapViewer({
         <button
           type="button"
           onClick={handleRecenter}
-          title="Recenter to Winneba (5.34352, -0.62566)"
+          title={`Recenter to ${activeMuniName} (${activeCenter[0].toFixed(4)}, ${activeCenter[1].toFixed(4)})`}
           className="w-10 h-10 rounded-xl bg-primary text-on-primary shadow-md flex items-center justify-center hover:bg-surface-tint transition-colors cursor-pointer mt-1"
         >
           <span className="material-symbols-outlined text-[20px]">my_location</span>

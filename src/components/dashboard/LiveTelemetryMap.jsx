@@ -4,6 +4,7 @@ import OpenStreetMapViewer from '../map/OpenStreetMapViewer';
 export default function LiveTelemetryMap({
   drainageSegments,
   incidents = [],
+  selectedMunicipality = null,
   focusedLocation = null,
   onSelectSegment,
   onSelectIncident,
@@ -15,6 +16,7 @@ export default function LiveTelemetryMap({
       <OpenStreetMapViewer
         drainageSegments={drainageSegments}
         incidents={incidents}
+        selectedMunicipality={selectedMunicipality}
         focusedLocation={focusedLocation}
         selectedSegmentId={selectedSegmentId}
         onSelectSegment={onSelectSegment}
